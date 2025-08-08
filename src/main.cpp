@@ -1,4 +1,4 @@
-// main.cpp – sensor packet + 1‑s audio + photo logger to SD‑card for Seeed XIAO ESP32S3 Sense
+// main.cpp – sensor packet + 1‑s audio + photo + JSON logger to SD‑card for Seeed XIAO ESP32S3 Sense
 #include <Arduino.h>
 #include <Wire.h>
 #include <ICM20948_WE.h>
@@ -16,7 +16,7 @@
 static constexpr int MIC_DATA_PIN = 42;   // PDM‑DAT  (GPIO42)
 static constexpr int MIC_CLK_PIN  = 41;   // PDM‑CLK  (GPIO41)
 static constexpr int SD_CS_PIN    = 21;   // µSD‑CS   (GPIO21)
-static constexpr uint16_t AUDIO_FS   = 16'000;   // 16 kHz mono 16‑bit
+static constexpr uint16_t AUDIO_FS   = 16'000;   // 16 kHz mono 16‑bit
 static constexpr uint8_t  AUDIO_SEC  = 1;        // duration per recording (s)
 
 /********* Camera configuration (unchanged) *********/
@@ -46,7 +46,7 @@ static camera_config_t cfg = {
 
   /* --- **ab hier exakt die Reihenfolge aus esp_camera.h!** --- */
   .pixel_format = PIXFORMAT_JPEG,
-  .frame_size   = FRAMESIZE_QVGA,   // 320×240 → ≈90 KB
+  .frame_size   = FRAMESIZE_QVGA,   // 320×240 → ≈90 KB
   .jpeg_quality = 12,               // 0‑63 (lower → better quality)
   .fb_count     = 2,
   .fb_location  = CAMERA_FB_IN_PSRAM,
@@ -76,14 +76,15 @@ uint32_t  mediaCounter = 0;
 /********* Forward declarations *********/
 void setupIMU();
 void setupTOF();
-void buildAndSendPacket();
-void captureAndStoreMedia(uint32_t idx);
+void buildAndStorePacket(uint32_t idx, uint32_t ts);
+void captureAndStoreMedia(uint32_t idx, uint32_t ts);
 
 /********* Arduino setup *********/
 void setup() {
   delay(8000);                    // allow USB‑serial to connect
   Serial.begin(115200);
   Wire.begin();
+  Wire.setClock(400000);          // I2C Fast‑Mode (400 kHz)
   Serial.println("Booting …");
 
   /* ---- Sensors ---- */
@@ -121,8 +122,10 @@ void loop() {
   if (millis() - lastPacketMillis >= PACKET_INTERVAL_MS) {
     lastPacketMillis += PACKET_INTERVAL_MS;    // maintain exact cadence
 
-    buildAndSendPacket();                      // JSON → Serial
-    captureAndStoreMedia(mediaCounter++);      // audio + photo → SD
+    uint32_t ts = millis();                    // timestamp in ms since boot
+    buildAndStorePacket(mediaCounter, ts);     // JSON → Serial + SD
+    captureAndStoreMedia(mediaCounter, ts);    // audio + photo → SD
+    mediaCounter++;
   }
 
   // … other background tasks here …
@@ -137,7 +140,7 @@ void setupIMU() {
   Serial.println("✅ ICM20948 connected");
 
   if (myIMU.initMagnetometer()) {
-    Serial.println("✅ Magnetometer ready (100 Hz)");
+    Serial.println("✅ Magnetometer ready (100 Hz)");
     hasMag = true;
   } else {
     Serial.println("⚠️  Magnetometer init failed – continuing without");
@@ -154,7 +157,7 @@ void setupIMU() {
   myIMU.enableFifo(true);
   delay(100);
   myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
-  Serial.println("FIFO started (ACC+GYR @ ≈100 Hz)");
+  Serial.println("FIFO started (ACC+GYR @ ≈100 Hz)");
 }
 
 /********* ToF init *********/
@@ -162,7 +165,7 @@ void setupTOF() {
   tof.setBus(&Wire);
   if (tof.init()) {
     tof.setDistanceMode(VL53L1X::Long);
-    tof.setMeasurementTimingBudget(50000); // 50 ms
+    tof.setMeasurementTimingBudget(50000); // 50 ms
     tof.startContinuous(0);
     hasTOF = true;
     Serial.println("✅ VL53L1X ready (continuous)");
@@ -171,8 +174,8 @@ void setupTOF() {
   }
 }
 
-/********* JSON build & serial out (unchanged) *********/
-void buildAndSendPacket() {
+/********* JSON build, serial out & SD save *********/
+void buildAndStorePacket(uint32_t idx, uint32_t ts) {
   myIMU.stopFifo();
   myIMU.findFifoBegin();
   imuCount = myIMU.getNumberOfFifoDataSets();
@@ -201,6 +204,7 @@ void buildAndSendPacket() {
   }
 
   DynamicJsonDocument doc(16384);
+  doc["ts"] = ts;                // timestamp in ms
   JsonObject magObj = doc.createNestedObject("mag");
   magObj["x"] = mag.x;
   magObj["y"] = mag.y;
@@ -221,39 +225,53 @@ void buildAndSendPacket() {
     g["y"] = imuBuf[i].gy;
     g["z"] = imuBuf[i].gz;
   }
+
+  /* --- serial out --- */
   serializeJson(doc, Serial);
   Serial.println();
+
+  /* --- save to SD --- */
+  char path[32];
+  snprintf(path, sizeof(path), "/pkt_%lu.json", idx);
+  File pktFile = SD.open(path, FILE_WRITE);
+  if (pktFile) {
+    serializeJson(doc, pktFile);
+    pktFile.close();
+    Serial.printf("📝  saved %s\n", path);
+  } else {
+    Serial.printf("❌  failed to open %s\n", path);
+  }
 }
 
 /********* Audio + photo capture *********/
-void captureAndStoreMedia(uint32_t idx) {
-  char path[32];
+void captureAndStoreMedia(uint32_t idx, uint32_t ts) {
+  char path[48];
 
   /* --- 1) Take photo --- */
   camera_fb_t *fb = esp_camera_fb_get();
   if (fb) {
-    snprintf(path, sizeof(path), "/img_%lu.jpg", idx);
+    snprintf(path, sizeof(path), "/img_%lu_%lu.jpg", idx, ts);
     File imgFile = SD.open(path, FILE_WRITE);
     if (imgFile) {
       imgFile.write(fb->buf, fb->len);
       imgFile.close();
-      Serial.printf("📷  saved %s (%u bytes)\n", path, fb->len);
+      Serial.printf("📷  saved %s (%u bytes)\n", path, fb->len);
     } else {
       Serial.printf("❌  failed to open %s\n", path);
     }
     esp_camera_fb_return(fb);
   }
 
-  /* --- 2) Record %u s audio --- */
+  /* --- 2) Record %u s audio --- */
   size_t   wavSize;
-  uint8_t *wavBuf = i2s.recordWAV(AUDIO_SEC, &wavSize);   // blocking ≈1 s
+  uint8_t *wavBuf = i2s.recordWAV(AUDIO_SEC, &wavSize);   // blocking ≈1 s
   if (wavBuf && wavSize) {
-    snprintf(path, sizeof(path), "/rec_%lu.wav", idx);
+    snprintf(path, sizeof(path), "/rec_%lu_%lu.wav", idx, ts);
     File wavFile = SD.open(path, FILE_WRITE);
     if (wavFile) {
       wavFile.write(wavBuf, wavSize);
       wavFile.close();
-      Serial.printf("🎤  saved %s (%u bytes)\n", path, (unsigned)wavSize);
+      Serial.printf("🎤  saved %s (%u bytes)\n", path, (unsigned)wavSize);
     } else {
       Serial.printf("❌  failed to open %s\n", path);
     }
