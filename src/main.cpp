@@ -1,183 +1,262 @@
-// main.cpp
+// main.cpp – sensor packet + 1‑s audio + photo logger to SD‑card for Seeed XIAO ESP32S3 Sense
 #include <Arduino.h>
 #include <Wire.h>
 #include <ICM20948_WE.h>
+#include <VL53L1X.h>
 #include <ArduinoJson.h>
+
 #include "esp_camera.h"
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
+#include "camera_pins.h"   // liefert XIAO‑Sense‑Pins, wenn CAMERA_MODEL_XIAO_ESP32S3 definiert ist
 
-#include "CameraSetup.h"
+#include "ESP_I2S.h"        // PDM‑MIC
+#include "FS.h"
+#include "SD.h"
 
-// BLE UUIDs
-#define SERVICE_UUID      "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define NOTIFY_CHAR_UUID  "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+/********* Audio / SD configuration *********/
+static constexpr int MIC_DATA_PIN = 42;   // PDM‑DAT  (GPIO42)
+static constexpr int MIC_CLK_PIN  = 41;   // PDM‑CLK  (GPIO41)
+static constexpr int SD_CS_PIN    = 21;   // µSD‑CS   (GPIO21)
+static constexpr uint16_t AUDIO_FS   = 16'000;   // 16 kHz mono 16‑bit
+static constexpr uint8_t  AUDIO_SEC  = 1;        // duration per recording (s)
 
-void positionFunctionBatch();
+/********* Camera configuration (unchanged) *********/
+static camera_config_t cfg = {
+  /* --- Pins --- */
+  .pin_pwdn     = PWDN_GPIO_NUM,
+  .pin_reset    = RESET_GPIO_NUM,
+  .pin_xclk     = XCLK_GPIO_NUM,
+  .pin_sccb_sda = SIOD_GPIO_NUM,
+  .pin_sccb_scl = SIOC_GPIO_NUM,
+  .pin_d7       = Y9_GPIO_NUM,
+  .pin_d6       = Y8_GPIO_NUM,
+  .pin_d5       = Y7_GPIO_NUM,
+  .pin_d4       = Y6_GPIO_NUM,
+  .pin_d3       = Y5_GPIO_NUM,
+  .pin_d2       = Y4_GPIO_NUM,
+  .pin_d1       = Y3_GPIO_NUM,
+  .pin_d0       = Y2_GPIO_NUM,
+  .pin_vsync    = VSYNC_GPIO_NUM,
+  .pin_href     = HREF_GPIO_NUM,
+  .pin_pclk     = PCLK_GPIO_NUM,
 
+  /* --- Clock & PWM --- */
+  .xclk_freq_hz = 24'000'000,
+  .ledc_timer   = LEDC_TIMER_0,
+  .ledc_channel = LEDC_CHANNEL_0,
 
-
-ICM20948_WE myIMU(0x68);
-
-const char* ssid     = "WALKEY-ESP32";
-const char* password = "WALKEY123456";
-
-AsyncWebServer server(80);
-
-BLECharacteristic* pCharacteristic;
-bool deviceConnected = false;
-bool oldDeviceConnected = false;
-
-class MyServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer* pServer) override {
-    deviceConnected = true;
-    Serial.println("✅ Device connected");
-  }
-
-  void onDisconnect(BLEServer* pServer) override {
-    deviceConnected = false;
-    Serial.println("❌ Device disconnected");
-  }
+  /* --- **ab hier exakt die Reihenfolge aus esp_camera.h!** --- */
+  .pixel_format = PIXFORMAT_JPEG,
+  .frame_size   = FRAMESIZE_QVGA,   // 320×240 → ≈90 KB
+  .jpeg_quality = 12,               // 0‑63 (lower → better quality)
+  .fb_count     = 2,
+  .fb_location  = CAMERA_FB_IN_PSRAM,
+  .grab_mode    = CAMERA_GRAB_WHEN_EMPTY
 };
 
+/********* IMU & ToF settings (unchanged) *********/
+#define ICM20948_ADDR 0x68
+ICM20948_WE myIMU(ICM20948_ADDR);
+VL53L1X      tof;
+
+constexpr uint32_t PACKET_INTERVAL_MS = 1000;   // once per second
+constexpr size_t   MAX_FIFO_SETS      = 120;    // safety margin
+unsigned long lastPacketMillis = 0;
+
+bool hasMag = false;
+bool hasTOF = false;
+
+struct IMUSample { float ax, ay, az, gx, gy, gz; };
+IMUSample imuBuf[MAX_FIFO_SETS];
+size_t    imuCount = 0;
+
+/********* Globals *********/
+I2SClass  i2s;
+uint32_t  mediaCounter = 0;
+
+/********* Forward declarations *********/
+void setupIMU();
+void setupTOF();
+void buildAndSendPacket();
+void captureAndStoreMedia(uint32_t idx);
+
+/********* Arduino setup *********/
 void setup() {
-  delay(8000);
+  delay(8000);                    // allow USB‑serial to connect
   Serial.begin(115200);
   Wire.begin();
-  delay(2000);
-  Serial.printf("Initialize good");
-  
-  //initialize camera
-  setupCamera();
-  // if (!cameraReady) while(true) delay(1000);
-  
-  // start Wi-Fi AP
-  WiFi.softAP(ssid, password);
-  Serial.printf("AP IP address: %s\n", WiFi.softAPIP().toString().c_str());
+  Serial.println("Booting …");
 
-  server.on("/picture.jpg", HTTP_GET, [](AsyncWebServerRequest *request){
-  camera_fb_t* fb = esp_camera_fb_get();
-  if (!fb) {
-    request->send(500, "text/plain", "Capture failed");
+  /* ---- Sensors ---- */
+  setupIMU();
+  setupTOF();
+
+  /* ---- Camera ---- */
+  if (esp_camera_init(&cfg) == ESP_OK) {
+    Serial.println("✅ Kamera bereit");
+  } else {
+    Serial.println("❌ Kamera‑Init fehlgeschlagen");
+    for (;;) {}
+  }
+
+  /* ---- SD card ---- */
+  Serial.println("Mounting SD…");
+  if (!SD.begin(SD_CS_PIN)) {
+    Serial.println("❌ SD‑Karte nicht gefunden / mount fehlgeschlagen");
+    for (;;) {}
+  }
+  Serial.println("✅ SD‑Karte bereit");
+
+  /* ---- I2S microphone ---- */
+  Serial.println("Initialising microphone …");
+  i2s.setPinsPdmRx(MIC_DATA_PIN, MIC_CLK_PIN);
+  if (!i2s.begin(I2S_MODE_PDM_RX, AUDIO_FS, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO)) {
+    Serial.println("❌ I2S‑Init fehlgeschlagen");
+    for (;;) {}
+  }
+  Serial.println("✅ Mikrofon bereit");
+}
+
+/********* Arduino loop *********/
+void loop() {
+  if (millis() - lastPacketMillis >= PACKET_INTERVAL_MS) {
+    lastPacketMillis += PACKET_INTERVAL_MS;    // maintain exact cadence
+
+    buildAndSendPacket();                      // JSON → Serial
+    captureAndStoreMedia(mediaCounter++);      // audio + photo → SD
+  }
+
+  // … other background tasks here …
+}
+
+/********* IMU init *********/
+void setupIMU() {
+  if (!myIMU.init()) {
+    Serial.println("❌ ICM20948 does not respond");
     return;
   }
-  // this overload takes (code, contentType, dataPtr, dataLen)
-  // 2) Build a response object (lets you add headers)
-  AsyncWebServerResponse* res = 
-  request->beginResponse_P(
-      200,                        // HTTP status
-      "image/jpeg",               // MIME type
-      fb->buf,                    // pointer
-      fb->len                     // length
-  );
-  res->addHeader("Content-Disposition",
-                "inline; filename=\"picture.jpg\"");
-  request->send(res);
-  esp_camera_fb_return(fb);
-  });
+  Serial.println("✅ ICM20948 connected");
 
-  // basic index page
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *req){
-    req->send(200, "text/html",
-      "<h1>ESP32-CAM EdgeAI</h1>"
-      "<p><a href=\"/picture.jpg\">Snap & view a picture</a></p>"
-    );
-  });
+  if (myIMU.initMagnetometer()) {
+    Serial.println("✅ Magnetometer ready (100 Hz)");
+    hasMag = true;
+  } else {
+    Serial.println("⚠️  Magnetometer init failed – continuing without");
+  }
 
-  server.begin();
+  myIMU.setAccRange(ICM20948_ACC_RANGE_2G);
+  myIMU.setAccDLPF(ICM20948_DLPF_6);
+  myIMU.setAccSampleRateDivider(10);
 
-  // init IMU
-  if (!myIMU.init())           Serial.println("ICM20948 does not respond");
-  else                          Serial.println("ICM20948 is connected");
-  if (!myIMU.initMagnetometer()) Serial.println("Magnetometer does not respond");
-  else                          Serial.println("Magnetometer is connected");
+  myIMU.setGyrDLPF(ICM20948_DLPF_6);
+  myIMU.setGyrSampleRateDivider(10);
 
-  // init BLE
-  // BLEDevice::setMTU(127); 
-  delay(2000);
-  BLEDevice::init("EdgeAI-ICM20948");
-  BLEServer* pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-  BLEService* pService = pServer->createService(SERVICE_UUID);
-  pCharacteristic = pService->createCharacteristic(NOTIFY_CHAR_UUID, BLECharacteristic::PROPERTY_NOTIFY);
-  pCharacteristic->addDescriptor(new BLE2902());
-  pService->start();
-  pServer->getAdvertising()->addServiceUUID(SERVICE_UUID);
-  pServer->getAdvertising()->setScanResponse(true);
-  pServer->getAdvertising()->start();
-  Serial.println("BLE listo y en espera de conexión…");
+  myIMU.setFifoMode(ICM20948_CONTINUOUS);
+  myIMU.enableFifo(true);
+  delay(100);
+  myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
+  Serial.println("FIFO started (ACC+GYR @ ≈100 Hz)");
 }
 
-void loop() {
-  if (deviceConnected) {
-    positionFunctionBatch();
-    delay(100);  // optional
+/********* ToF init *********/
+void setupTOF() {
+  tof.setBus(&Wire);
+  if (tof.init()) {
+    tof.setDistanceMode(VL53L1X::Long);
+    tof.setMeasurementTimingBudget(50000); // 50 ms
+    tof.startContinuous(0);
+    hasTOF = true;
+    Serial.println("✅ VL53L1X ready (continuous)");
+  } else {
+    Serial.println("⚠️  VL53L1X init failed – continuing without");
   }
-
-  // Check if client disconnected and restart advertising
-  if (!deviceConnected && oldDeviceConnected) {
-    delay(500);  // allow time before restarting advertising
-    BLEDevice::getAdvertising()->start();
-    Serial.println("🔄 Restarted advertising");
-    oldDeviceConnected = deviceConnected;
-  }
-
-  // Check if client just connected
-  if (deviceConnected && !oldDeviceConnected) {
-    Serial.println("🔒 Ready to send data");
-    oldDeviceConnected = deviceConnected;
-  }
-
-  delay(500);
 }
 
+/********* JSON build & serial out (unchanged) *********/
+void buildAndSendPacket() {
+  myIMU.stopFifo();
+  myIMU.findFifoBegin();
+  imuCount = myIMU.getNumberOfFifoDataSets();
+  if (imuCount > MAX_FIFO_SETS) imuCount = MAX_FIFO_SETS;
+  for (size_t i = 0; i < imuCount; ++i) {
+    xyzFloat acc, gyr;
+    myIMU.getGValuesFromFifo(&acc);
+    myIMU.getGyrValuesFromFifo(&gyr);
+    imuBuf[i] = {acc.x, acc.y, acc.z, gyr.x, gyr.y, gyr.z};
+  }
+  myIMU.resetFifo();
+  myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
 
-// Position function
-// This function takes two integers and returns their product
-void positionFunctionBatch() {
-  const int sampleCount = 100;
-
-  for (int i = 0; i < sampleCount; i++) {
+  xyzFloat mag = {0, 0, 0};
+  if (hasMag) {
     myIMU.readSensor();
-
-    xyzFloat acc, gyro, mag;
-    myIMU.getAccRawValues(&acc);
-    myIMU.getGyrRawValues(&gyro);
     myIMU.getMagValues(&mag);
+  }
 
-    // Crear documento JSON
-    // StaticJsonDocument<256> doc;
-    JsonDocument doc; 
-    doc["a"]["x"] = acc.x;
-    doc["a"]["y"] = acc.y;
-    doc["a"]["z"] = acc.z;
+  uint16_t tofRange = 0;
+  uint8_t  tofStatus = 255;
+  if (hasTOF) {
+    if (tof.dataReady()) tof.read(false);
+    tofRange  = tof.ranging_data.range_mm;
+    tofStatus = static_cast<uint8_t>(tof.ranging_data.range_status);
+  }
 
-    doc["g"]["x"] = gyro.x;
-    doc["g"]["y"] = gyro.y;
-    doc["g"]["z"] = gyro.z;
+  DynamicJsonDocument doc(16384);
+  JsonObject magObj = doc.createNestedObject("mag");
+  magObj["x"] = mag.x;
+  magObj["y"] = mag.y;
+  magObj["z"] = mag.z;
+  JsonObject tofObj = doc.createNestedObject("tof");
+  tofObj["r"] = tofRange;
+  tofObj["s"] = tofStatus;
+  JsonArray imuArr = doc.createNestedArray("IMU");
+  for (size_t i = 0; i < imuCount; ++i) {
+    JsonObject e = imuArr.createNestedObject();
+    e["i"] = static_cast<uint16_t>(i);
+    JsonObject a = e.createNestedObject("a");
+    a["x"] = imuBuf[i].ax;
+    a["y"] = imuBuf[i].ay;
+    a["z"] = imuBuf[i].az;
+    JsonObject g = e.createNestedObject("g");
+    g["x"] = imuBuf[i].gx;
+    g["y"] = imuBuf[i].gy;
+    g["z"] = imuBuf[i].gz;
+  }
+  serializeJson(doc, Serial);
+  Serial.println();
+}
 
-    doc["m"]["x"] = mag.x;
-    doc["m"]["y"] = mag.y;
-    doc["m"]["z"] = mag.z;
+/********* Audio + photo capture *********/
+void captureAndStoreMedia(uint32_t idx) {
+  char path[32];
 
-    // Serializar JSON a string
-    String output;
-    serializeJson(doc, output);
-
-    // Enviar por BLE
-    if (deviceConnected) {
-      pCharacteristic->setValue(output.c_str());
-      pCharacteristic->notify();
+  /* --- 1) Take photo --- */
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (fb) {
+    snprintf(path, sizeof(path), "/img_%lu.jpg", idx);
+    File imgFile = SD.open(path, FILE_WRITE);
+    if (imgFile) {
+      imgFile.write(fb->buf, fb->len);
+      imgFile.close();
+      Serial.printf("📷  saved %s (%u bytes)\n", path, fb->len);
+    } else {
+      Serial.printf("❌  failed to open %s\n", path);
     }
+    esp_camera_fb_return(fb);
+  }
 
-    // Debug por Seria  l
-    //Serial.println(output);
-
-    delay(100);  // 100 Hz (for now)
+  /* --- 2) Record %u s audio --- */
+  size_t   wavSize;
+  uint8_t *wavBuf = i2s.recordWAV(AUDIO_SEC, &wavSize);   // blocking ≈1 s
+  if (wavBuf && wavSize) {
+    snprintf(path, sizeof(path), "/rec_%lu.wav", idx);
+    File wavFile = SD.open(path, FILE_WRITE);
+    if (wavFile) {
+      wavFile.write(wavBuf, wavSize);
+      wavFile.close();
+      Serial.printf("🎤  saved %s (%u bytes)\n", path, (unsigned)wavSize);
+    } else {
+      Serial.printf("❌  failed to open %s\n", path);
+    }
+    free(wavBuf);
   }
 }
