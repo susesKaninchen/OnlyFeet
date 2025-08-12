@@ -48,9 +48,10 @@ Project environment (`platformio.ini`):
 
 ## Firmware Behavior
 - Boot: waits ~8 s to allow USB‑Serial to connect, initializes I2C (400 kHz), sensors, camera, SD, and I2S mic
-- Loop cadence: once per second (1,000 ms) using `millis()`
+- Scheduling: FreeRTOS tasks with strict 1 s cadence via `vTaskDelayUntil`
+- Synchronization: IMU FIFO is reset at the start of each 1 s audio window; audio and IMU are aligned to the same window
 - Camera: QVGA (320×240), JPEG quality 12, 24 MHz XCLK, 2 frame buffers in PSRAM
-- Audio: 16 kHz, 16‑bit, mono; recorded in 1 s blocking chunks
+- Audio: 16 kHz, 16‑bit, mono; recorded in 1 s chunks and written by a writer task
 - IMU: ACC+GYR FIFO in continuous mode (~100 Hz effective), optional magnetometer
 - ToF: continuous mode with 50 ms timing budget (long‑distance mode)
 
@@ -75,7 +76,7 @@ Example JSON fields:
 ```
 
 ## Notes & Limitations
-- Blocking capture: taking a photo and recording 1 s of audio are blocking operations. If these exceed the 1 s cadence, subsequent ticks may drift.
+- Timing: The sampler task maintains the 1 s grid; SD/photo writes are offloaded to a writer task to avoid jitter.
 - SD layout: files are written to the card root. A session folder structure and `meta.json` are not implemented yet.
 - Serial encoding: some status messages may include non‑ASCII symbols depending on your terminal font/encoding.
 
@@ -98,4 +99,3 @@ Example JSON fields:
 
 ## License
 Add a license if you plan to publish (e.g., MIT/Apache‑2.0).
-
