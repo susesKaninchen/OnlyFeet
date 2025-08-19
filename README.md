@@ -1,11 +1,15 @@
 # OnlyFeet – XIAO ESP32S3 Sense Data Logger
 
-This PlatformIO project logs multi-sensor data on a Seeed Studio XIAO ESP32S3 Sense to a microSD card. Each second it:
-- Reads ICM‑20948 IMU FIFO (accel + gyro, optional magnetometer)
-- Reads VL53L1X ToF range
-- Captures a JPEG frame from the on‑board camera
-- Records 1 s of mono 16‑kHz audio from the PDM microphone
-- Emits a JSON packet over Serial and writes JSON/JPEG/WAV files to the SD card root
+This PlatformIO project logs multi-sensor data from a Seeed Studio XIAO ESP32S3 Sense to a microSD card.
+
+**Core Functionality:**
+- **High-Frequency ToF:** Reads the VL53L1X Time-of-Flight sensor continuously (~20 Hz) in a dedicated, high-priority task.
+- **Continuous IMU:** Samples the ICM-20948 IMU (accelerometer and gyroscope) at ~100 Hz, reading data from a continuously running FIFO buffer.
+- **Per-Second Packets:** Every second, the system:
+  - Records 1 second of mono 16-kHz audio from the PDM microphone.
+  - Captures a QVGA JPEG image from the camera.
+  - Bundles all sensor data (all ToF and IMU readings from the last second), the audio, and the image into a packet.
+  - Writes the data to the SD card (`.json`, `.wav`, `.jpg`) and prints the JSON to the serial port.
 
 The code is in `src/main.cpp`; camera GPIOs are defined in `include/camera_pins.h`.
 
@@ -47,13 +51,17 @@ Project environment (`platformio.ini`):
 - Libs: `esp32-camera`, `ArduinoJson`, `ICM20948_WE`, `VL53L1X`
 
 ## Firmware Behavior
-- Boot: waits ~8 s to allow USB‑Serial to connect, initializes I2C (400 kHz), sensors, camera, SD, and I2S mic
-- Scheduling: FreeRTOS tasks with strict 1 s cadence via `vTaskDelayUntil`
-- Synchronization: IMU FIFO is reset at the start of each 1 s audio window; audio and IMU are aligned to the same window
-- Camera: QVGA (320×240), JPEG quality 12, 24 MHz XCLK, 2 frame buffers in PSRAM
-- Audio: 16 kHz, 16‑bit, mono; recorded in 1 s chunks and written by a writer task
-- IMU: ACC+GYR FIFO in continuous mode (~100 Hz effective), optional magnetometer
-- ToF: continuous mode with 50 ms timing budget (long‑distance mode)
+- **Scheduling:** The system uses three main FreeRTOS tasks:
+  - `tofTask`: A high-priority task that continuously reads the ToF sensor as fast as data is available.
+  - `samplerTask`: Runs on a strict 1-second cadence to record audio and collect sensor data from the IMU and ToF queues.
+  - `writerTask`: A lower-priority task that handles the slower operations of writing all files (JSON, WAV, JPG) to the SD card.
+- **Data Flow & Synchronization:**
+  - The ToF sensor runs continuously. A dedicated task reads the data and places it in a queue, overwriting the oldest sample if the queue is full.
+  - The IMU FIFO runs continuously without being reset.
+  - Once per second, the `samplerTask` gathers all pending ToF readings and all available IMU data from the last second into a single data packet for the `writerTask`.
+- **Boot:** waits ~8 s to allow USB‑Serial to connect, initializes I2C (400 kHz), sensors, camera, SD, and I2S mic.
+- **Camera:** QVGA (320×240), JPEG quality 12, 24 MHz XCLK, 2 frame buffers in PSRAM.
+- **Audio:** 16 kHz, 16‑bit, mono; recorded in 1 s chunks.
 
 ## Files Written to SD (root)
 - JSON packet: `/pkt_<index>.json`
@@ -67,17 +75,22 @@ Example JSON fields:
 {
   "ts": 123456,
   "mag": {"x": 0.0, "y": 0.0, "z": 0.0},
-  "tof": {"r": 1234, "s": 0},
+  "tof": [
+    {"t": 10, "r": 1230, "s": 0},
+    {"t": 60, "r": 1231, "s": 0},
+    {"t": 110, "r": 1231, "s": 0}
+    // ... up to ~20 entries per second
+  ],
   "IMU": [
     {"i": 0, "a": {"x": 0.01, "y": 0.02, "z": 0.98}, "g": {"x": 0.1, "y": -0.1, "z": 0.0}}
-    // ... up to ~120 entries per second
+    // ... up to ~100 entries per second
   ]
 }
 ```
 
 ## Notes & Limitations
-- Timing: The sampler task maintains the 1 s grid; SD/photo writes are offloaded to a writer task to avoid jitter.
-- SD layout: files are written to the card root. A session folder structure and `meta.json` are not implemented yet.
+- Timing: The `samplerTask` maintains the 1 s grid; SD/photo writes are offloaded to a `writerTask` to avoid jitter.
+- SD layout: files are written to the card root. A session folder structure is not implemented yet.
 - Serial encoding: some status messages may include non‑ASCII symbols depending on your terminal font/encoding.
 
 ## Customization
@@ -85,6 +98,7 @@ Example JSON fields:
 - Change audio sample rate/length via `AUDIO_FS` and `AUDIO_SEC`
 - Tweak IMU FIFO sample rate/dividers in `setupIMU()`
 - Change microSD CS or mic pins in the constants at the top of `src/main.cpp`
+- Adjust task priorities, stack sizes, and queue lengths in the configuration section of `src/main.cpp`.
 
 ## Troubleshooting
 - SD init fails: confirm wiring and card format (FAT32), check `CS=GPIO21`, try a different card
@@ -94,7 +108,7 @@ Example JSON fields:
 
 ## Roadmap
 - Session directories with `meta.json` (e.g., `/OF/SESSION_.../`)
-- Decouple/blocking operations (photo/audio) from the 1 s tick
+- Decouple blocking operations (photo/audio) from the sampler task tick to further reduce jitter.
 - Basic serial command interface (start/stop/status)
 
 ## License
