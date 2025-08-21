@@ -8,7 +8,9 @@
 #include "esp_camera.h"
 #include "camera_pins.h"   // XIAO Sense cam pins (CAMERA_MODEL_XIAO_ESP32S3)
 
-#include <driver/i2s_pdm.h>    // For PDM/PCM interface
+#include "ESP_I2S.h"
+
+I2SClass I2S;
 #include "FS.h"
 #include "SD.h"
 
@@ -18,7 +20,6 @@
 #include "freertos/queue.h"
 
 /********* Audio / SD configuration *********/
-static constexpr i2s_port_t I2S_PORT = I2S_NUM_0;
 static constexpr int MIC_DATA_PIN = 42;
 static constexpr int MIC_CLK_PIN  = 41;
 static constexpr int SD_CS_PIN    = 21;
@@ -41,7 +42,7 @@ static camera_config_t cfg = {
   .xclk_freq_hz = 24000000,      .ledc_timer   = LEDC_TIMER_0,
   .ledc_channel = LEDC_CHANNEL_0,
   .pixel_format = PIXFORMAT_JPEG, .frame_size   = FRAMESIZE_QVGA,
-  .jpeg_quality = 12, .fb_count     = 2,
+  .jpeg_quality = 30, .fb_count     = 2,
   .fb_location  = CAMERA_FB_IN_PSRAM,
   .grab_mode    = CAMERA_GRAB_WHEN_EMPTY
 };
@@ -58,7 +59,7 @@ constexpr size_t   MAX_TOF_READINGS   = 30;
 /********* Task & Queue Configuration *********/
 static constexpr uint32_t JSON_DOC_SIZE = 16384;
 
-static constexpr size_t PACKET_QUEUE_LEN = 2;
+static constexpr size_t PACKET_QUEUE_LEN = 5;
 static constexpr size_t TOF_QUEUE_LEN    = 50;
 static constexpr size_t AUDIO_QUEUE_LEN  = 2; // For passing buffer pointers
 
@@ -86,7 +87,7 @@ char      dataDir[16]  = "/data0";
 QueueHandle_t gPacketQueue = nullptr;
 QueueHandle_t gTofQueue    = nullptr;
 QueueHandle_t gAudioQueue  = nullptr; // For passing audio buffer pointers
-i2s_chan_handle_t rx_handle = NULL;
+
 
 // Packet sent from Sampler to Writer
 struct Packet {
@@ -130,14 +131,14 @@ void setup() {
     Serial.println("OK. Camera ready");
   } else {
     Serial.println("ERR Camera init failed");
-    for (;;) {}
+    while(1);
   }
 
   /* ---- SD card ---- */
   Serial.println("Mounting SD …");
   if (!SD.begin(SD_CS_PIN)) {
     Serial.println("ERR SD mount failed");
-    for (;;) {}
+    while(1);
   }
   Serial.println("OK. SD ready");
 
@@ -160,7 +161,7 @@ void setup() {
   gAudioQueue = xQueueCreate(AUDIO_QUEUE_LEN, sizeof(uint8_t*)); // Pointer queue
   if (!gPacketQueue || !gTofQueue || !gAudioQueue) {
     Serial.println("ERR queue create failed");
-    for(;;) {}
+    while(1);
   }
 
   // Create tasks
@@ -170,11 +171,11 @@ void setup() {
   BaseType_t ok4 = xTaskCreatePinnedToCore(audioTask, "audio", AUDIO_STACK_SIZE, nullptr, AUDIO_PRIORITY, nullptr, 0);
   if (ok1 != pdPASS || ok2 != pdPASS || ok3 != pdPASS || ok4 != pdPASS) {
     Serial.println("ERR task create failed");
-    for(;;) {}
+    while(1);
   }
 }
 
-/********* Arduino loop **********/
+/********* Arduino loop *********/
 void loop() {
   // All work is handled in FreeRTOS tasks, so this one is not needed.
   vTaskDelete(NULL);
@@ -184,50 +185,21 @@ void loop() {
 
 /********* Audio Init *********/
 void setupAudio() {
-  Serial.println("Initialising microphone using I2S driver...");
-
-  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_PORT, I2S_ROLE_MASTER);
-  chan_cfg.dma_desc_num = 4;
-  chan_cfg.dma_frame_num = 1024;
-  esp_err_t err = i2s_new_channel(&chan_cfg, NULL, &rx_handle);
-  if (err != ESP_OK) {
-    Serial.printf("ERR I2S new channel failed: %d\n", err);
-    for(;;)
- {}
-  }
-
-  i2s_pdm_rx_config_t pdm_rx_cfg = {
-    .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(AUDIO_FS),
-    .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
-    .gpio_cfg = {
-        .clk = (gpio_num_t)MIC_CLK_PIN,
-        .din = (gpio_num_t)MIC_DATA_PIN,
-    },
-  };
-
-  err = i2s_channel_init_pdm_rx_mode(rx_handle, &pdm_rx_cfg);
-  if (err != ESP_OK) {
-    Serial.printf("ERR I2S init PDM RX mode failed: %d\n", err);
-    for(;;)
- {}
-  }
-
-  err = i2s_channel_enable(rx_handle);
-  if (err != ESP_OK) {
-    Serial.printf("ERR I2S channel start failed: %d\n", err);
-    for(;;)
- {}
+  Serial.println("Initialising microphone using I2S library...");
+  // Using the Seeed Studio XIAO ESP32S3 Sense board-specific library
+  // For ESP32 core v3.0.x and later
+  I2S.setPinsPdmRx(42, 41);
+  if (!I2S.begin(I2S_MODE_PDM_RX, 16000, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO)) {
+    Serial.println("ERR Failed to initialize I2S!");
+    while(1);
   }
   Serial.println("OK. I2S driver ready.");
 }
 
 /********* Audio Task (asynchronous recording) *********/
 void audioTask(void* arg) {
-  size_t bytes_read = 0;
-
   for (;;) {
     // Allocate a new buffer for each audio chunk.
-    // This buffer will be passed to other tasks and freed by the writerTask.
     uint8_t* pcm_buf = (uint8_t*)malloc(AUDIO_PCM_SIZE);
     if (!pcm_buf) {
         Serial.println("ERR audioTask failed to allocate pcm_buf");
@@ -235,14 +207,8 @@ void audioTask(void* arg) {
         continue;
     }
 
-    // Read from I2S DMA buffer into the new PCM buffer.
-    // This call blocks until AUDIO_PCM_SIZE bytes are read.
-    esp_err_t err = i2s_channel_read(rx_handle, pcm_buf, AUDIO_PCM_SIZE, &bytes_read, portMAX_DELAY);
-    if (err != ESP_OK) {
-      Serial.printf("ERR I2S read failed: %d\n", err);
-      free(pcm_buf); // Free the buffer if read fails
-      continue; // Try again
-    }
+    // Read a block of audio data using the correct readBytes function.
+    size_t bytes_read = I2S.readBytes((char*)pcm_buf, AUDIO_PCM_SIZE);
 
     // Check if the expected number of bytes were read
     if (bytes_read != AUDIO_PCM_SIZE) {
@@ -250,12 +216,10 @@ void audioTask(void* arg) {
     }
 
     // Try to send the pointer of the *filled* buffer to the sampler task.
-    // If the queue is full, we must free the buffer to avoid a memory leak.
     if (xQueueSend(gAudioQueue, &pcm_buf, pdMS_TO_TICKS(50)) != pdPASS) {
       Serial.println("WARN audio queue full, dropping audio data");
       free(pcm_buf);
     }
-    // If send was successful, the writerTask now owns the buffer and is responsible for freeing it.
   }
 }
 
@@ -369,18 +333,8 @@ void samplerTask(void* arg) {
   const TickType_t periodTicks = pdMS_TO_TICKS(PACKET_INTERVAL_MS);
   TickType_t lastWake = xTaskGetTickCount();
 
-  Serial.println("Sampler task: Waiting for initial audio buffer...");
-  // Pre-fetch the first audio buffer to align windows
-  uint8_t* pcmBuf = nullptr;
-  if (xQueueReceive(gAudioQueue, &pcmBuf, portMAX_DELAY) != pdPASS) {
-      Serial.println("ERR failed to get initial audio buffer");
-      // Can't continue without the first buffer, so halt.
-      for(;;){ vTaskDelay(pdMS_TO_TICKS(1000)); }
-  }
-  Serial.println("Sampler task: Initial audio buffer received.");
-
   for (;;) {
-    // Maintain strict cadence. This call starts the 1s window.
+    // Maintain strict cadence.
     vTaskDelayUntil(&lastWake, periodTicks);
     uint32_t ts = millis();
     Serial.printf("Sampler task: New window at %lu ms.\n", ts);
@@ -389,21 +343,16 @@ void samplerTask(void* arg) {
     Packet pkt{};
     pkt.idx = mediaCounter;
     pkt.ts_ms = ts;
-    
-    // The pcmBuf for this packet is the one we received in the *previous* iteration.
-    // This ensures the audio is correctly aligned with the 1-second window.
-    pkt.pcmBuf = pcmBuf;
-    pkt.pcmSize = pcmBuf ? AUDIO_PCM_SIZE : 0;
 
-    // --- Asynchronously fetch the audio buffer for the *next* packet ---
-    Serial.println("Sampler task: Waiting for next audio buffer...");
-    if (xQueueReceive(gAudioQueue, &pcmBuf, pdMS_TO_TICKS(PACKET_INTERVAL_MS + 100)) != pdPASS) {
-        Serial.println("WARN sampler task timed out waiting for audio buffer.");
-        // To prevent memory leaks, we must not lose the pointer to the current buffer.
-        // Setting pcmBuf to null means we won't have audio for the next packet.
-        pcmBuf = nullptr; 
+    // --- Fetch the audio buffer for the current packet window ---
+    uint8_t* pcmBuf = nullptr;
+    if (xQueueReceive(gAudioQueue, &pcmBuf, pdMS_TO_TICKS(PACKET_INTERVAL_MS - 50)) == pdPASS) {
+        pkt.pcmBuf = pcmBuf;
+        pkt.pcmSize = AUDIO_PCM_SIZE;
     } else {
-        Serial.println("Sampler task: Next audio buffer received.");
+        Serial.println("WARN sampler task timed out waiting for audio buffer.");
+        pkt.pcmBuf = nullptr;
+        pkt.pcmSize = 0;
     }
 
     // --- Gather other sensor data at end of window ---
@@ -437,7 +386,9 @@ void samplerTask(void* arg) {
 
     // Enqueue for writer
     if (xQueueSend(gPacketQueue, &pkt, pdMS_TO_TICKS(50)) != pdPASS) {
-      if (pkt.pcmBuf) free(pkt.pcmBuf);
+      if (pkt.pcmBuf) {
+        free(pkt.pcmBuf);
+      }
       Serial.println("WARN packet queue full — dropping packet");
     } else {
       Serial.println("Sampler task: Packet sent to writer.");
@@ -445,6 +396,7 @@ void samplerTask(void* arg) {
     }
   }
 }
+
 
 
 /********* JSON helper ***********/ 
