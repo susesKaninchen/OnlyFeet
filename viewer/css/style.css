@@ -1,0 +1,203 @@
+/* OnlyFeet Viewer – Dark Theme */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --border: #0f3460;
+  --accent: #e94560;
+  --text: #eee;
+  --text-dim: #999;
+  --radius: 6px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ─── Header ─── */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+#folder-label .btn {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#folder-label .btn:hover {
+  filter: brightness(1.15);
+}
+
+#session-info {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ─── Main Grid ─── */
+#grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 3fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  height: calc(100vh - 40px - 40px); /* minus header & footer */
+  overflow: hidden;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel h3 {
+  padding: 4px 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-dim);
+  background: rgba(0,0,0,.2);
+  flex-shrink: 0;
+}
+
+.panel-content {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Camera */
+#camera-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+
+/* IMU Orientation */
+#imu-orient-container {
+  width: 100%;
+  height: 100%;
+}
+
+#imu-orient-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ToF */
+#tof-container {
+  width: 100%;
+  height: 100%;
+}
+
+#tof-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Chart panels: side by side in bottom row */
+.chart-panel .panel-content {
+  padding: 2px 8px;
+}
+
+.chart-panel canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ─── Footer / Transport ─── */
+#transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  height: 40px;
+  flex-shrink: 0;
+}
+
+#transport-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+#transport button {
+  background: var(--border);
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#transport button:hover {
+  background: var(--accent);
+}
+
+#timeline-slider {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+#time-display {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  min-width: 90px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+#transport-extras {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+#transport-extras select,
+#transport-extras input[type="range"] {
+  accent-color: var(--accent);
+}
+
+#speed-select {
+  background: var(--border);
+  color: var(--text);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+#volume-slider {
+  width: 60px;
+}

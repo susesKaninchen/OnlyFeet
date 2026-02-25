@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnlyFeet – Sensor Data Viewer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js r137 (legacy global build with OrbitControls) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- AHRS Madgwick filter (standalone, from ahrs npm package) -->
+  <script src="js/madgwick.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header id="header">
+    <label id="folder-label">
+      <span class="btn">Select Folder</span>
+      <input type="file" id="folder-input" webkitdirectory multiple hidden>
+    </label>
+    <span id="session-info">No session loaded</span>
+  </header>
+
+  <!-- Main grid -->
+  <main id="grid">
+    <!-- Top row: camera + ToF -->
+    <section id="camera-panel" class="panel">
+      <h3>Camera</h3>
+      <div class="panel-content">
+        <img id="camera-img" alt="No image">
+      </div>
+    </section>
+
+    <section id="imu-orient-panel" class="panel">
+      <h3>IMU 3D Orientation</h3>
+      <div class="panel-content" id="imu-orient-container"></div>
+    </section>
+
+    <section id="tof-panel" class="panel">
+      <h3>ToF 8×8 Heightmap</h3>
+      <div class="panel-content" id="tof-container"></div>
+    </section>
+
+    <!-- IMU charts -->
+    <section id="accel-panel" class="panel chart-panel">
+      <h3>Accelerometer</h3>
+      <div class="panel-content"><canvas id="accel-chart"></canvas></div>
+    </section>
+
+    <section id="gyro-panel" class="panel chart-panel">
+      <h3>Gyroscope</h3>
+      <div class="panel-content"><canvas id="gyro-chart"></canvas></div>
+    </section>
+
+    <section id="mag-panel" class="panel chart-panel">
+      <h3>Magnetometer</h3>
+      <div class="panel-content"><canvas id="mag-chart"></canvas></div>
+    </section>
+  </main>
+
+  <!-- Transport controls -->
+  <footer id="transport">
+    <div id="transport-buttons">
+      <button id="btn-prev" title="Previous packet">&#9664;&#9664;</button>
+      <button id="btn-play" title="Play / Pause">&#9654; Play</button>
+      <button id="btn-next" title="Next packet">&#9654;&#9654;</button>
+    </div>
+    <input type="range" id="timeline-slider" min="0" max="0" value="0" step="1">
+    <span id="time-display">0:00 / 0:00</span>
+    <div id="transport-extras">
+      <label>Speed:
+        <select id="speed-select">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+      </label>
+      <label>Volume:
+        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.8">
+      </label>
+    </div>
+  </footer>
+
+  <!-- Scripts (modules) -->
+  <script src="js/data-loader.js"></script>
+  <script src="js/timeline.js"></script>
+  <script src="js/tof-view.js"></script>
+  <script src="js/imu-charts.js"></script>
+  <script src="js/imu-orientation.js"></script>
+  <script src="js/audio-player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
