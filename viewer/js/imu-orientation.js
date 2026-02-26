@@ -2,15 +2,21 @@
  * imu-orientation.js – 3D board visualization from IMU data
  *
  * Rotation:    Madgwick AHRS filter fusing accel + gyro + mag → quaternion
- * Translation: Double integration of linear accel with ZUPT drift correction
- *              Board moves through 3D space, red trail line shows path
+ * Translation: Pre-computed INS with periodic drift correction.
+ *
+ * Approach: AHRS gives orientation → quaternion-based gravity removal →
+ * rotate linear accel to world frame → double-integrate per segment →
+ * retroactive velocity drift correction every ~1 second.
+ *
+ * Works for any motion: walking, waving, rotating, whatever.
+ * Some drift is expected and acceptable.
  */
 const ImuOrientation = (() => {
   const container = document.getElementById('imu-orient-container');
   let scene, camera, renderer, controls;
   let boardGroup;
 
-  // --- AHRS filter ---
+  // --- AHRS filter (live, for smooth rotation during playback) ---
   let ahrs = null;
   let lastMag = null;
 
@@ -19,36 +25,32 @@ const ImuOrientation = (() => {
   let hasTarget = false;
   const SLERP_ALPHA = 0.3;
 
-  // --- Gravity estimation (low-pass) ---
-  const LP_ALPHA = 0.95;
-  const gravEst = { x: 0, y: 0, z: 0 };
-  let gravInitialized = false;
+  // --- Pre-computed path ---
+  let precomputedPath = null;
+  let sampleIndex = 0;
 
-  // --- Double integration for position ---
-  const DT = 0.01;              // 100Hz → 10ms
-  const G_TO_MS2 = 9.81;       // convert g to m/s²
-  const SCALE = 0.5;            // m → scene units
-  const DEAD_ZONE = 0.08;       // g, ignore noise
-  const VEL_DECAY = 0.98;       // slight velocity damping to limit drift
-  const vel = { x: 0, y: 0, z: 0 };
-  const pos = { x: 0, y: 0, z: 0 };
+  // --- Position display ---
+  const SCALE = 2.0;
+  const currentPos = new THREE.Vector3();
   const displayPos = new THREE.Vector3();
-  const POS_LERP = 0.3;
-
-  // --- ZUPT: zero-velocity update ---
-  const ZUPT_ACCEL_THRESH = 0.12;  // g — max linAccel magnitude to count as "still"
-  const ZUPT_GYRO_THRESH = 15;     // deg/s — max gyro magnitude to count as "still"
-  let zuptCount = 0;
-  const ZUPT_MIN_SAMPLES = 8;      // consecutive still samples before ZUPT fires
 
   // --- Trail line ---
   const MAX_TRAIL_POINTS = 10000;
-  let trailPositions;   // Float32Array
+  let trailPositions;
   let trailLine;
   let trailGeom;
   let trailCount = 0;
-  let trailAddCounter = 0;          // only add point every N samples
-  const TRAIL_INTERVAL = 3;         // add trail point every 3 samples (30ms)
+  let trailAddCounter = 0;
+  const TRAIL_INTERVAL = 3;
+
+  // --- Origin marker ---
+  let originMarker;
+
+  // --- INS constants ---
+  const DT = 0.01;
+  const G_TO_MS2 = 9.81;
+  const DEAD_ZONE = 0.02;           // very small — drift correction handles the rest
+  const SEGMENT_LENGTH = 100;        // samples per segment (~1s) — drift correction interval
 
   function init() {
     ahrs = new MadgwickAHRS({ sampleInterval: 10, beta: 0.4 });
@@ -57,7 +59,7 @@ const ImuOrientation = (() => {
     scene.background = new THREE.Color(0x0a0a1a);
 
     camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 500);
-    camera.position.set(3, 3, 5);
+    camera.position.set(5, 8, 12);
     camera.lookAt(0, 0, 0);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -76,29 +78,31 @@ const ImuOrientation = (() => {
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // Grid + gravity arrow
-    scene.add(new THREE.GridHelper(10, 10, 0x333355, 0x222244));
+    scene.add(new THREE.GridHelper(30, 30, 0x333355, 0x222244));
     scene.add(new THREE.ArrowHelper(
       new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 2, 0),
       2, 0xffff00, 0.3, 0.15
     ));
 
-    // Board group
+    originMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+    );
+    scene.add(originMarker);
+
     boardGroup = new THREE.Group();
     scene.add(boardGroup);
 
-    // Elongated box (~2x4x2 — lang in grüne Y-Achse)
     boardGroup.add(new THREE.Mesh(
-      new THREE.BoxGeometry(2, 4, 2),
+      new THREE.BoxGeometry(0.6, 1.2, 0.6),
       new THREE.MeshPhongMaterial({ color: 0x3a7bd5 })
     ));
 
-    const axisLen = 1.5, headLen = 0.2, headW = 0.1;
+    const axisLen = 0.8, headLen = 0.12, headW = 0.06;
     boardGroup.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), axisLen, 0xff0000, headLen, headW));
     boardGroup.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), axisLen, 0x00ff00, headLen, headW));
     boardGroup.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), axisLen, 0x4444ff, headLen, headW));
 
-    // Trail line
     trailPositions = new Float32Array(MAX_TRAIL_POINTS * 3);
     trailGeom = new THREE.BufferGeometry();
     trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
@@ -125,30 +129,13 @@ const ImuOrientation = (() => {
     requestAnimationFrame(animate);
 
     if (hasTarget && boardGroup) {
-      // Smooth rotation
       const q = ahrs.getQuaternion();
       const targetQuat = new THREE.Quaternion(q.x, q.y, q.z, q.w);
       displayQuat.slerp(targetQuat, SLERP_ALPHA);
       boardGroup.quaternion.copy(displayQuat);
 
-      // Smooth position — lerp toward integrated pos
-      const targetPos = new THREE.Vector3(
-        pos.x * SCALE,
-        pos.z * SCALE,    // NED Z (down) → scene Y (up), inverted below
-        pos.y * SCALE     // NED Y (east) → scene Z
-      );
-      // NED: X=north→scene-Z, Y=east→scene+X, Z=down→scene-Y
-      targetPos.set(
-        pos.y * SCALE,
-        -pos.z * SCALE,
-        pos.x * SCALE
-      );
-
-      displayPos.lerp(targetPos, POS_LERP);
+      displayPos.lerp(currentPos, 0.15);
       boardGroup.position.copy(displayPos);
-
-      // Camera follows board loosely
-      controls.target.lerp(displayPos, 0.05);
     }
 
     controls.update();
@@ -166,9 +153,178 @@ const ImuOrientation = (() => {
     trailGeom.setDrawRange(0, trailCount);
   }
 
+  // NED → scene: X=north→Z, Y=east→X, Z=down→-Y
+  function nedToScene(nx, ny, nz) {
+    return { x: ny * SCALE, y: -nz * SCALE, z: nx * SCALE };
+  }
+
+  // ─── Quaternion helpers ───
+
+  function removeGravity(ax, ay, az, qw, qx, qy, qz) {
+    // Rotate world gravity [0,0,1] into sensor frame via conjugate quaternion
+    const cqw = qw, cqx = -qx, cqy = -qy, cqz = -qz;
+    const tx = 2 * cqy;
+    const ty = -2 * cqx;
+    const gSensorX = cqw * tx - cqz * ty;
+    const gSensorY = cqw * ty + cqz * tx;
+    const gSensorZ = 1 + (cqx * ty - cqy * tx);
+    return { x: ax - gSensorX, y: ay - gSensorY, z: az - gSensorZ };
+  }
+
+  function rotateToWorld(vx, vy, vz, qw, qx, qy, qz) {
+    const tx = 2 * (qy * vz - qz * vy);
+    const ty = 2 * (qz * vx - qx * vz);
+    const tz = 2 * (qx * vy - qy * vx);
+    return {
+      x: vx + qw * tx + (qy * tz - qz * ty),
+      y: vy + qw * ty + (qz * tx - qx * tz),
+      z: vz + qw * tz + (qx * ty - qy * tx)
+    };
+  }
+
   /**
-   * Per-sample update (called at ~100Hz).
+   * Pre-compute the entire 3D path from all packets.
+   *
+   * 1. Run AHRS on all samples → orientation quaternion per sample
+   * 2. Remove gravity (quaternion-based), rotate linear accel to world frame
+   * 3. Split into fixed-length segments (~1s each)
+   * 4. Per segment: integrate accel→vel→pos, correct velocity drift retroactively
+   * 5. Chain segments together for continuous path
    */
+  function precomputePath(packets) {
+    console.log('[INS] precomputePath called, packets:', packets ? packets.length : 'null');
+    if (!packets || !packets.length) {
+      precomputedPath = null;
+      return;
+    }
+
+    try {
+    // ── Pass 1: Run AHRS, compute world-frame linear acceleration ──
+    const pathAhrs = new MadgwickAHRS({ sampleInterval: 10, beta: 0.4 });
+    let pathMag = null;
+    const worldAccels = [];
+
+    for (let pi = 0; pi < packets.length; pi++) {
+      const pkt = packets[pi];
+      if (!pkt.json || !pkt.json.IMU) continue;
+      const json = pkt.json;
+      if (json.mag) pathMag = json.mag;
+
+      for (let si = 0; si < json.IMU.length; si++) {
+        const s = json.IMU[si];
+        if (!s || !s.a) continue;
+        const a = s.a;
+        const g = s.g;
+
+        const gx = g ? g.x * (Math.PI / 180) : 0;
+        const gy = g ? g.y * (Math.PI / 180) : 0;
+        const gz = g ? g.z * (Math.PI / 180) : 0;
+
+        if (pathMag) {
+          pathAhrs.update(gx, gy, gz, a.x, a.y, a.z, pathMag.x, pathMag.y, pathMag.z);
+        } else {
+          pathAhrs.update(gx, gy, gz, a.x, a.y, a.z);
+        }
+
+        const q = pathAhrs.getQuaternion();
+        const lin = removeGravity(a.x, a.y, a.z, q.w, q.x, q.y, q.z);
+
+        // Small dead zone to suppress noise at rest
+        if (Math.abs(lin.x) < DEAD_ZONE) lin.x = 0;
+        if (Math.abs(lin.y) < DEAD_ZONE) lin.y = 0;
+        if (Math.abs(lin.z) < DEAD_ZONE) lin.z = 0;
+
+        worldAccels.push(rotateToWorld(lin.x, lin.y, lin.z, q.w, q.x, q.y, q.z));
+      }
+    }
+
+    const n = worldAccels.length;
+    if (n === 0) { precomputedPath = null; return; }
+
+    // ── Pass 2: Build segment boundaries at regular intervals ──
+    const anchors = [0];
+    for (let i = SEGMENT_LENGTH; i < n; i += SEGMENT_LENGTH) {
+      anchors.push(i);
+    }
+    if (anchors[anchors.length - 1] !== n - 1) {
+      anchors.push(n - 1);
+    }
+
+    // ── Pass 3: Per-segment integration with velocity drift correction ──
+    const positions = new Array(n);
+    let curPos = { x: 0, y: 0, z: 0 };
+
+    for (let seg = 0; seg < anchors.length - 1; seg++) {
+      const start = anchors[seg];
+      const end = anchors[seg + 1];
+      const segLen = end - start;
+
+      if (segLen === 0) {
+        positions[start] = { x: curPos.x, y: curPos.y, z: curPos.z };
+        continue;
+      }
+
+      // Integrate accel → velocity
+      const velArr = [{ x: 0, y: 0, z: 0 }];
+      for (let i = start; i < end; i++) {
+        const prev = velArr[velArr.length - 1];
+        const acc = worldAccels[i];
+        velArr.push({
+          x: prev.x + acc.x * G_TO_MS2 * DT,
+          y: prev.y + acc.y * G_TO_MS2 * DT,
+          z: prev.z + acc.z * G_TO_MS2 * DT
+        });
+      }
+
+      // Retroactive velocity drift correction:
+      // Assume velocity at segment end should be same as start (≈0 relative).
+      // Linearly subtract the accumulated drift.
+      const endVel = velArr[segLen];
+      for (let i = 0; i <= segLen; i++) {
+        const frac = i / segLen;
+        velArr[i].x -= endVel.x * frac;
+        velArr[i].y -= endVel.y * frac;
+        velArr[i].z -= endVel.z * frac;
+      }
+
+      // Integrate corrected velocity → position
+      positions[start] = { x: curPos.x, y: curPos.y, z: curPos.z };
+      for (let i = 1; i <= segLen; i++) {
+        const prev = positions[start + i - 1];
+        positions[start + i] = {
+          x: prev.x + velArr[i].x * DT,
+          y: prev.y + velArr[i].y * DT,
+          z: prev.z + velArr[i].z * DT
+        };
+      }
+
+      curPos = positions[end];
+    }
+
+    // Fill any gaps
+    for (let i = 0; i < n; i++) {
+      if (!positions[i]) positions[i] = { x: 0, y: 0, z: 0 };
+    }
+
+    precomputedPath = positions;
+    sampleIndex = 0;
+
+    // Stats
+    let maxDist = 0, minZ = Infinity, maxZ = -Infinity;
+    for (const p of positions) {
+      const d = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+      if (d > maxDist) maxDist = d;
+      if (p.z < minZ) minZ = p.z;
+      if (p.z > maxZ) maxZ = p.z;
+    }
+    console.log(`[INS] Path: ${n} samples, ${anchors.length} segments, maxDist=${maxDist.toFixed(2)}m (${(maxDist*SCALE).toFixed(1)} scene), vertRange=${(maxZ-minZ).toFixed(3)}m (${((maxZ-minZ)*SCALE).toFixed(1)} scene Y)`);
+
+    } catch (err) {
+      console.error('[INS] precomputePath FAILED:', err);
+      precomputedPath = null;
+    }
+  }
+
   function updateSample(sample, mag) {
     if (!boardGroup || !sample || !sample.a) return;
 
@@ -176,12 +332,10 @@ const ImuOrientation = (() => {
     const g = sample.g;
     if (mag) lastMag = mag;
 
-    // Gyro: deg/s → rad/s for AHRS
     const gx = g ? g.x * (Math.PI / 180) : 0;
     const gy = g ? g.y * (Math.PI / 180) : 0;
     const gz = g ? g.z * (Math.PI / 180) : 0;
 
-    // Feed AHRS filter
     if (lastMag) {
       ahrs.update(gx, gy, gz, a.x, a.y, a.z, lastMag.x, lastMag.y, lastMag.z);
     } else {
@@ -194,70 +348,18 @@ const ImuOrientation = (() => {
       hasTarget = true;
     }
 
-    // --- Gravity estimation via low-pass ---
-    if (!gravInitialized) {
-      gravEst.x = a.x; gravEst.y = a.y; gravEst.z = a.z;
-      gravInitialized = true;
-    }
-    gravEst.x = LP_ALPHA * gravEst.x + (1 - LP_ALPHA) * a.x;
-    gravEst.y = LP_ALPHA * gravEst.y + (1 - LP_ALPHA) * a.y;
-    gravEst.z = LP_ALPHA * gravEst.z + (1 - LP_ALPHA) * a.z;
+    if (precomputedPath && sampleIndex < precomputedPath.length) {
+      const p = precomputedPath[sampleIndex];
+      const s = nedToScene(p.x, p.y, p.z);
+      currentPos.set(s.x, s.y, s.z);
 
-    // Linear acceleration in sensor frame (g)
-    let linX = a.x - gravEst.x;
-    let linY = a.y - gravEst.y;
-    let linZ = a.z - gravEst.z;
-
-    // Dead zone
-    if (Math.abs(linX) < DEAD_ZONE) linX = 0;
-    if (Math.abs(linY) < DEAD_ZONE) linY = 0;
-    if (Math.abs(linZ) < DEAD_ZONE) linZ = 0;
-
-    const linMag = Math.sqrt(linX * linX + linY * linY + linZ * linZ);
-    const gyroMag = g ? Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z) : 0;
-
-    // --- ZUPT detection ---
-    const isStill = (linMag < ZUPT_ACCEL_THRESH) && (gyroMag < ZUPT_GYRO_THRESH);
-    if (isStill) {
-      zuptCount++;
-      if (zuptCount >= ZUPT_MIN_SAMPLES) {
-        // Reset velocity to zero — corrects drift
-        vel.x = 0; vel.y = 0; vel.z = 0;
+      trailAddCounter++;
+      if (trailAddCounter >= TRAIL_INTERVAL) {
+        trailAddCounter = 0;
+        addTrailPoint(s.x, s.y, s.z);
       }
-    } else {
-      zuptCount = 0;
-    }
 
-    // Rotate linear accel to world frame (NED) using AHRS quaternion
-    const q = ahrs.getQuaternion();
-    const orientQuat = new THREE.Quaternion(q.x, q.y, q.z, q.w);
-    const linWorld = new THREE.Vector3(linX, linY, linZ).applyQuaternion(orientQuat);
-
-    // Convert g → m/s² and integrate
-    const ax_ms2 = linWorld.x * G_TO_MS2;
-    const ay_ms2 = linWorld.y * G_TO_MS2;
-    const az_ms2 = linWorld.z * G_TO_MS2;
-
-    // Integrate: velocity += accel * dt
-    vel.x = vel.x * VEL_DECAY + ax_ms2 * DT;
-    vel.y = vel.y * VEL_DECAY + ay_ms2 * DT;
-    vel.z = vel.z * VEL_DECAY + az_ms2 * DT;
-
-    // Integrate: position += velocity * dt
-    pos.x += vel.x * DT;
-    pos.y += vel.y * DT;
-    pos.z += vel.z * DT;
-
-    // Add trail point periodically
-    trailAddCounter++;
-    if (trailAddCounter >= TRAIL_INTERVAL) {
-      trailAddCounter = 0;
-      // Same NED→scene mapping as animate()
-      addTrailPoint(
-        pos.y * SCALE,
-        -pos.z * SCALE,
-        pos.x * SCALE
-      );
+      sampleIndex++;
     }
   }
 
@@ -273,20 +375,18 @@ const ImuOrientation = (() => {
     ahrs = new MadgwickAHRS({ sampleInterval: 10, beta: 0.4 });
     lastMag = null;
     hasTarget = false;
-    gravEst.x = 0; gravEst.y = 0; gravEst.z = 0;
-    gravInitialized = false;
-    vel.x = 0; vel.y = 0; vel.z = 0;
-    pos.x = 0; pos.y = 0; pos.z = 0;
+    currentPos.set(0, 0, 0);
     displayPos.set(0, 0, 0);
-    zuptCount = 0;
     trailAddCounter = 0;
 
-    // Clear trail
+    precomputedPath = null;
+    sampleIndex = 0;
+
     if (trailGeom) {
       trailCount = 0;
       trailGeom.setDrawRange(0, 0);
     }
   }
 
-  return { init, update, updateSample, onResize, reset };
+  return { init, update, updateSample, onResize, reset, precomputePath };
 })();

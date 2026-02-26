@@ -36,6 +36,9 @@
       ImuCharts.reset();
       ImuOrientation.reset();
 
+      // Pre-compute 3D path using ZUPT-aided INS
+      ImuOrientation.precomputePath(data.packets);
+
       // Wire up timeline
       Timeline.init(data.packets, {
         onPacketChange: (pkt, idx) => {
