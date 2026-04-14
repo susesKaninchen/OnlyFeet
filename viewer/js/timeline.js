@@ -7,7 +7,7 @@ const Timeline = (() => {
   let playing = false;
   let speed = 1;
   let timerId = null;
-  let tofTimerId = null;
+  let tofTimers = [];          // setTimeout IDs für ToF-Frames
   let currentTofFrame = 0;
   let imuTimerId = null;
   let currentImuSample = 0;
@@ -39,6 +39,15 @@ const Timeline = (() => {
     emitPacket();
   }
 
+  /** Tatsächliche Paket-Dauer in ms aus Timestamp-Delta (gemeinsame Quelle für alle Animationen) */
+  function getDurationMs() {
+    if (currentIndex < packets.length - 1) {
+      const dt = packets[currentIndex + 1].ts - packets[currentIndex].ts;
+      if (dt > 0 && dt < 5000) return dt;
+    }
+    return 1000;
+  }
+
   function emitPacket() {
     if (!packets.length) return;
     const pkt = packets[currentIndex];
@@ -48,8 +57,9 @@ const Timeline = (() => {
 
     // When paused: show first frame/sample only, no animation
     if (playing) {
-      startTofAnimation(pkt);
-      startImuAnimation(pkt);
+      const dur = getDurationMs();
+      startTofAnimation(pkt);          // verwendet frame.t (eigene Timestamps)
+      startImuAnimation(pkt, dur);     // skaliert Interval auf echte Paket-Dauer
     } else {
       showStaticFrame(pkt);
     }
@@ -77,24 +87,26 @@ const Timeline = (() => {
     stopTofAnimation();
     if (!pkt.json || !pkt.json.tof || !pkt.json.tof.length) return;
 
-    const numFrames = pkt.json.tof.length;
+    const frames = pkt.json.tof;
     currentTofFrame = 0;
-    onTofFrame(pkt.json.tof[0], 0);
+    onTofFrame(frames[0], 0);
 
-    if (numFrames <= 1) return;
+    if (frames.length <= 1) return;
 
-    const intervalMs = (1000 / speed) / numFrames;
-    tofTimerId = setInterval(() => {
-      currentTofFrame++;
-      if (currentTofFrame < numFrames) {
-        onTofFrame(pkt.json.tof[currentTofFrame], currentTofFrame);
-      } else {
-        stopTofAnimation();
-      }
-    }, intervalMs);
+    // Jedes Frame zum tatsächlichen t-Offset anzeigen (speed-skaliert).
+    // frame.t ist der ms-Offset ab Paket-Start laut Firmware-Timestamp.
+    const t0 = frames[0].t;
+    for (let i = 1; i < frames.length; i++) {
+      const delayMs = Math.max(0, (frames[i].t - t0) / speed);
+      const id = setTimeout(() => {
+        currentTofFrame = i;
+        onTofFrame(frames[i], i);
+      }, delayMs);
+      tofTimers.push(id);
+    }
   }
 
-  function startImuAnimation(pkt) {
+  function startImuAnimation(pkt, durationMs) {
     stopImuAnimation();
     if (!pkt.json || !pkt.json.IMU || !pkt.json.IMU.length) return;
 
@@ -105,7 +117,9 @@ const Timeline = (() => {
 
     if (samples.length <= 1) return;
 
-    const intervalMs = 10 / speed;
+    // Interval aus tatsächlicher Paket-Dauer ableiten statt 10ms hardcoded.
+    // Dadurch läuft die IMU-Animation genau so lang wie das Paket.
+    const intervalMs = (durationMs / speed) / samples.length;
     imuTimerId = setInterval(() => {
       currentImuSample++;
       if (currentImuSample < samples.length) {
@@ -124,10 +138,8 @@ const Timeline = (() => {
   }
 
   function stopTofAnimation() {
-    if (tofTimerId !== null) {
-      clearInterval(tofTimerId);
-      tofTimerId = null;
-    }
+    tofTimers.forEach(id => clearTimeout(id));
+    tofTimers = [];
   }
 
   function play() {
@@ -155,13 +167,6 @@ const Timeline = (() => {
 
   function scheduleNext() {
     if (!playing) return;
-    // Duration for this packet: delta to next, or ~1s
-    let durationMs = 1000;
-    if (currentIndex < packets.length - 1) {
-      const dt = packets[currentIndex + 1].ts - packets[currentIndex].ts;
-      if (dt > 0 && dt < 5000) durationMs = dt;
-    }
-
     timerId = setTimeout(() => {
       if (!playing) return;
       if (currentIndex < packets.length - 1) {
@@ -171,7 +176,7 @@ const Timeline = (() => {
       } else {
         pause(); // end of session
       }
-    }, durationMs / speed);
+    }, getDurationMs() / speed);
   }
 
   function seekTo(idx) {

@@ -1,0 +1,390 @@
+
+
+
+
+%https://github.com/susesKaninchen/OnlyFeet%
+% =========================================
+% ACM SIGCONF TWO-COLUMN MANUSCRIPT
+% =========================================
+\documentclass[manuscript,review,anonymous]{acmart} 
+
+% ---------- Metadata ----------
+\newcommand{\name}{OnlyFeet} % paper macro
+\setcopyright{acmcopyright}
+\acmDOI{XXXXXXX.XXXXXXX}
+\acmISBN{978-1-4503-XXXX-X/25/11}
+\acmConference[VRST '25]{ACM Symposium on Virtual Reality Software and Technology}{Nov 2025}{City, Country}
+
+\acmBooktitle{VRST '25: ACM Symposium on Virtual Reality Software and Technology, Nov 2025, City, Country}
+
+% ---------- Packages ----------
+\usepackage{hyperref}
+\usepackage{eurosym}
+\usepackage{enumitem}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{pgf-pie}
+
+
+
+% ---------- Document ----------
+\begin{document}
+
+% ---------- Title & Authors ----------
+\title{\name: A Low-Cost Foot Interface for AI labeling}
+
+% << ≈ 20 words metadata – not counted >>
+\author{<Author 1>}
+\affiliation{\institution{<Affiliation>} \country{}} \email{<mail>}
+% Repeat as required
+\renewcommand{\shortauthors}{<Surname> et al.}
+
+% ---------- Abstract ----------
+\begin{abstract}
+We present \textit{OnlyFeet}, a compact, low-cost prototyping platform based on the Seeed XIAO ESP32S3 Sense microcontroller, integrating a camera, microphone, inertial measurement unit (IMU), and time-of-flight (ToF) distance sensor. The system is designed as a multimodal sensing device, capable of capturing synchronized video, audio, and motion data streams for applications in embodied interaction, activity recognition, and wearable computing research. Our hardware utilizes the onboard ESP32-S3 with PSRAM support, enabling real-time JPEG image encoding and efficient buffering of high-frequency IMU data through FIFO handling. Software is implemented in Arduino, combining the \texttt{esp32-camera}, \texttt{ICM20948}, and \texttt{VL53L1X} libraries with optimized JSON-based data serialization for reliable transmission. The architecture supports continuous acquisition and packaging of sensor modalities at 1\,Hz, while maintaining fine-grained inertial sampling at $\approx$100\,Hz. Pilot recordings by the authors and two additional participants, indoors and outdoors, indicated stable multi-sensor operation, demonstrating the feasibility of a cost-efficient, ESP32-based platform for multimodal data capture. \textit{OnlyFeet} highlights how an accessible microcontroller system can be extended into a flexible research tool bridging embedded sensing and real-world prototyping.
+\end{abstract}
+
+
+% ---------- CCS & Keywords ----------
+\ccsdesc[300]{Human-centered computing~Haptic devices}
+\keywords{Foot-based haptics, Thermal feedback, Vibrotactile feedback, Virtual reality, Wearable computing}
+
+
+
+\begin{teaserfigure}
+    \centering
+    \vspace{-25pt}
+    \includegraphics[width=\textwidth]{Figures/onlyFeet2.png}
+    \vspace{-17pt}
+    \caption{Overview of the \textit{OnlyFeet} multimodal logger. Left panel shows the shoe mounted ESP32 S3 based unit in a compact enclosure with external antenna. Center panel illustrates the sensing and firmware pipeline with IMU at about one hundred hertz, time of flight with a fifty millisecond budget, a digital microphone at sixteen kilohertz, and FreeRTOS based synchronization that writes JSON, WAV, and JPG to micro SD. Right panel presents a representative one second window with aligned audio waveform, range samples, and a camera frame. Average current is about two hundred milliampere which yields around five to six hours from a twelve hundred milliampere hour cell. Figure created for this paper.}
+    \label{fig:teaser}
+    \Description{Wide illustration with a sneaker carrying a small box on the laces, a block diagram of sensors connected to an ESP32 S3 and FreeRTOS, and sample outputs that show audio, distance readings, and a camera image for one second windows.}
+\end{teaserfigure}
+
+
+\maketitle
+
+% ---------- 1 Introduction ----------
+\section{Introduction}
+A central challenge in human–computer interaction (HCI), robotics, and embodied sensing is the reliable and synchronized capture of multimodal data streams. Many phenomena of interest, from locomotion and gesture recognition to affective computing and immersive extended reality (XR), rely on the integration of heterogeneous sensor modalities. While commercial devices such as smartphones or VR headsets offer some of these capabilities, they are costly, often closed ecosystems, and rarely optimized for flexible prototyping. As a result, researchers frequently face trade-offs between accessibility, extensibility, and data fidelity.
+
+The \textit{OnlyFeet} project addresses this gap by proposing a compact and affordable sensing platform based on the Seeed XIAO ESP32S3 Sense. Unlike prior single-modality research prototypes, \textit{OnlyFeet} integrates four complementary modalities on one board: (i) a camera module capable of real-time JPEG encoding, (ii) a digital microphone for continuous audio capture, (iii) a nine-axis inertial measurement unit (IMU) with FIFO buffering for high-frequency motion sensing, and (iv) a time-of-flight (ToF) distance sensor for spatial ranging. By combining these sensors in a single embedded platform, we enable synchronized multimodal recordings that can support a wide range of experimental scenarios.
+
+The significance of such a platform becomes clear when considering related domains. In activity recognition, vision-based approaches often suffer when applied in unconstrained environments; IMU-based sensing provides complementary robustness. In XR, camera and IMU fusion is essential for localization, while microphone and ranging data can enrich interaction contexts. In machine learning, multimodal training datasets are in high demand, yet researchers struggle with the lack of affordable, open, and reproducible hardware setups to generate them. \textit{OnlyFeet} thus positions itself as a bridge between low-level embedded sensing and high-level HCI research, emphasizing accessibility and reproducibility.
+
+From a hardware perspective, our system leverages the ESP32-S3 microcontroller with integrated AI acceleration and external PSRAM support. This enables efficient image acquisition while simultaneously handling high-throughput IMU data via FIFO registers. Our firmware, developed in the Arduino framework, builds on established libraries (\texttt{esp32-camera}, \texttt{ArduinoJson}, \texttt{ICM20948}, and \texttt{VL53L1X}) and introduces careful timing strategies. Specifically, IMU data are sampled continuously at approximately 100~Hz and stored in FIFO buffers, while once per second a multimodal packet is constructed, comprising compressed image frames, motion traces, audio snippets, and distance measurements. Data are serialized in JSON for streamlined transmission and subsequent parsing.
+
+\paragraph*{Research questions and hypotheses.}
+Our research is guided by the following questions:
+\begin{description}
+  \item[\textbf{RQ1}] To what extent can low-cost embedded hardware such as the ESP32-S3 reliably capture synchronized multimodal data streams under real-time constraints?
+  \item[\textbf{RQ2}] What is the relative contribution of each modality (camera, IMU, microphone, ToF) to the overall robustness of context recognition in prototype experiments?
+\end{description}
+
+Based on prior work in multimodal sensor fusion, we hypothesize:
+\begin{description}
+  \item[\textbf{H1}] The integration of high-frequency inertial data with visual input improves the temporal alignment and interpretability of captured sequences compared to single-modality logging.
+  \item[\textbf{H2}] Complementary modalities (audio and ranging) provide incremental benefits for recognition tasks in noisy or visually ambiguous scenarios.
+\end{description}
+
+\paragraph*{Contributions.}
+With this paper, we make the following contributions:
+\begin{itemize}
+  \item A \textbf{hardware artifact}, a compact and cost-efficient ESP32-S3-based prototype that integrates camera, microphone, IMU, and ToF sensing in one board.
+  \item A \textbf{software artifact}, an Arduino-based firmware architecture that provides synchronized data acquisition, FIFO-buffer management, and JSON-based serialization.
+  \item A \textbf{methodological contribution}, a first evaluation of the platform through pilot recordings and sensor validation studies, demonstrating its feasibility for multimodal data collection in HCI and XR research.
+\end{itemize}
+
+Together, these contributions advance the state of accessible multimodal prototyping by demonstrating how low-cost embedded systems can serve as versatile research tools for embodied sensing.
+
+
+
+% ---------- 2 Related Work ----------
+\section{Related Work}
+
+\subsection{Embedded Multimodal Data Loggers for Wearables}
+
+\subsection{Smart Insoles and Foot-Worn Sensor Systems}
+
+\subsection{Multimodal Sensor Fusion for Activity Recognition}
+
+\subsection{Wearable Dataset Creation}
+
+
+
+
+
+
+
+
+
+% ---------- 3 System Overview ----------
+\section{System Overview}
+This section presents the hardware and software architecture of \textit{OnlyFeet}, a compact and low cost multimodal logger based on the Seeed XIAO ESP32S3 Sense. The platform combines an integrated camera, a digital microphone, a nine axis IMU, and a time of flight ranging sensor. All data are written locally to a micro SD card as JSON packets, JPEG images, and WAV audio files. The device is enclosed in a small 3D printed housing that mounts to shoelaces and runs from an integrated rechargeable lithium cell.
+
+\subsection{Processing Module}
+\paragraph{Hardware.}
+The core of \textit{OnlyFeet} is the Seeed XIAO ESP32S3 Sense module, based on the ESP32 S3R8 system on chip with a dual core Tensilica CPU, 2.4 GHz WiFi and Bluetooth Low Energy 5.0, 8 MB PSRAM, and 8 MB Flash. The XIAO Sense integrates a plug in camera board, a digital microphone, an on board lithium battery charger, a micro SD card slot up to 32 GB, and an external antenna connector with a bundled antenna for robust wireless reception. It exposes a generous set of GPIOs on the XIAO pin headers and provides a USB C interface that serves for power, charging, serial monitoring, and programming. We selected this module because it is very cost effective and, in this compact footprint, uniquely combines a battery charger, camera, and microphone with solid compute performance, internal flash storage, micro SD expansion, and convenient external pins. In addition to the integrated peripherals of the XIAO module, \textit{OnlyFeet} includes a nine axis inertial measurement unit (ICM20948) and a time of flight distance sensor (VL53L1X) to capture foot motion and ground proximity. Both sensors are connected via the I2C interface of the ESP32S3. The system is powered by an integrated rechargeable lithium polymer battery with a physical power disconnect switch. All components are enclosed in a compact 3D printed housing that mounts to the shoelaces, resulting in a fully self contained and untethered device.
+
+\paragraph{Software functions.}
+Firmware is written using the Arduino framework with enabled PSRAM, USB CDC on boot, and the XIAO camera pinout. The system leverages the ESP32 FreeRTOS scheduler to ensure deterministic timing and task separation. Time critical sensing and logging are executed in dedicated tasks using operating system timing primitives, while non critical operations are handled asynchronously. The following libraries are used. \texttt{esp32\_camera} for image capture, \texttt{ArduinoJson} for serialization, \texttt{ICM20948\_WE} for inertial sensing, and \texttt{VL53L1X} for ranging. I2C runs at 400 kHz to service the IMU and time of flight sensor efficiently. A fixed one hertz packet cadence coordinates multimodal logging while motion is sampled continuously.
+
+\subsection{Firmware Implementation and Reproducibility}
+\paragraph{Build environment.}
+Firmware is built with PlatformIO using the \texttt{espressif32} platform 54.3.21 and the Arduino core \texttt{framework-arduinoespressif32} 3.2.1 (ESP-IDF 5.4.2 as shipped by PlatformIO). The target board is \texttt{seeed\_xiao\_esp32s3} with PSRAM enabled and USB CDC on boot. Library dependencies and versions used in this work are \texttt{esp32-camera} 2.0.4, \texttt{ArduinoJson} 7.4.2, \texttt{ICM20948\_WE} 1.2.5, and \texttt{VL53L1X} 1.3.1. These settings are encoded in \texttt{platformio.ini} to make the build reproducible.
+
+\paragraph{Boot and initialization.}
+At startup the firmware waits 8 s before enabling acquisition to allow the experimenter to begin movement and to avoid recording handling artifacts that would otherwise require trimming. The code then starts USB serial at 115200 baud, configures I2C at 400 kHz, initializes the IMU, ToF sensor, and microphone, and finally brings up the camera and micro SD card. If the magnetometer or ToF fails to initialize, the firmware continues without those modalities, which avoids losing a full session due to a single sensor.
+
+\paragraph{Tasking and timing.}
+Four FreeRTOS tasks are pinned to the ESP32-S3 cores: the sampler, audio, and ToF tasks run on core 0, while the writer runs on core 1. Priorities are set so that audio has the highest priority, sampler next, and writer and ToF below. The sampler uses \texttt{vTaskDelayUntil} to maintain a 1 s cadence and assembles one packet per window by pulling the latest audio buffer, draining the ToF queue, and reading the IMU FIFO. Queues decouple acquisition from storage (\texttt{gAudioQueue}, \texttt{gTofQueue}, \texttt{gPacketQueue}) and limit backlog to fixed sizes.
+
+\paragraph{Graceful degradation.}
+When the audio queue times out or queues are full, the packet is still written with the available modalities, and dropped samples are reported on serial. This behavior keeps the 1 Hz packet grid stable and avoids silent timing drift in later analysis.
+
+
+\subsection{Camera Subsystem}
+\paragraph{Hardware.}
+The module ships with an OV2640 image sensor, and we use the stock camera module in this work. The firmware currently operates at QVGA resolution with on chip JPEG compression. Two frame buffers are placed in PSRAM to keep SRAM usage low during concurrent sensor reads and task execution.
+
+\paragraph{Software functions.}
+The camera clock is set to 24 MHz. The pixel format is JPEG and the quality parameter is set to 30 to obtain compact files at stable frame times. After each one second window a JPEG frame is captured and stored on the micro SD card as \texttt{img\_\{index\}\_\{ts\}.jpg}. Each saved frame is time aligned with the motion, audio, and ranging data from the same window to support multimodal analysis.
+
+\paragraph{Sensing roles.}
+The camera provides visual context that complements the IMU, microphone, and time of flight sensor. It can identify ground surfaces and obstacles ahead of the foot, observe scene brightness to approximate time of day and indoor or outdoor conditions, and support activity recognition through appearance and motion cues. Image sequences can be used to compute optical flow that enriches gait analysis and step segmentation when fused with inertial data. The visual stream also assists in estimating environmental properties such as surface texture, shadow transitions, and free space that are difficult to infer from inertial or audio channels alone.
+
+
+\subsection{Audio Subsystem}
+\paragraph{Hardware.}
+The on board digital microphone interfaces with the ESP32 through the I2S peripheral in PDM receive mode. On the XIAO ESP32S3 Sense, pin 42 carries data and pin 41 carries clock. The enclosure provides a dedicated microphone aperture, and the microphone and camera are enclosed in a separate compartment from the rest of the electronics to reduce mechanical coupling.
+
+\paragraph{Software functions.}
+Audio is sampled at 16 kHz, 16 bit, mono. A dedicated high priority task reads exactly one second of PCM into a freshly allocated buffer, then transfers buffer ownership to the writer through a queue. The writer adds a standard 44 byte WAV header and saves the file as \texttt{rec\_\{index\}\_\{ts\}.wav} on the micro SD card. Each audio file aligns with the same one second window used for the image, IMU, and time of flight data to support multimodal fusion. The design maintains continuous capture without gaps by decoupling acquisition from storage.
+
+\paragraph{Sensing roles.}
+The acoustic channel complements vision and motion sensing by providing information about contact events and environmental context. Footfall sounds reveal substrate types such as sand, gravel, wood, or tile through spectral and temporal signatures. Reverberation and early reflections indicate room size and material properties, which helps distinguish indoor and outdoor conditions. Aggregate loudness and the frequency of high level transients can act as a proxy for stress exposure in busy environments. In combination with IMU timing, short audio snippets improve gait event detection and can help disambiguate ambiguous visual frames when the camera view is occluded.
+
+
+\subsection{Inertial Measurement Unit}
+\paragraph{Hardware.}
+An ICM20948 provides tri axial accelerometer and gyroscope together with a tri axial magnetometer. The device communicates over I2C at 400 kHz and is addressed at 0x68. Nine axis sensing improves heading observability and enables tilt compensation compared to common six axis units. In our configuration the accelerometer range is set to 2 g and the gyroscope operates with digital low pass filtering for stable readings during walking.
+
+\paragraph{Software functions.}
+The accelerometer and gyroscope run at approximately one hundred hertz. The firmware enables the hardware FIFO in continuous mode and applies digital low pass filter setting 6 with a sample rate divider of ten for both accelerometer and gyroscope. At the end of each one second window the sampler finds the FIFO head, copies all pending samples into a preallocated buffer, resets the FIFO, and immediately restarts acquisition. A single magnetometer sample is added once per packet to limit I2C load. Each IMU entry carries an incremental index which preserves order inside the one second window and serves as the temporal backbone for packet level synchronization.
+
+\paragraph{Sensing roles.}
+The IMU provides dense motion ground truth that supports step detection, heel strike and toe off timing, and stance and swing segmentation. Integrated gyroscope and gravity aligned acceleration enable estimation of foot orientation and allow drift reduced heading when fused with the magnetometer. Peak patterns in vertical and anterior posterior acceleration indicate stairs and ramps, while lateral signatures can flag slips and uneven surfaces. The motion stream stabilizes visual analysis by supplying frame to frame motion cues and improves time alignment for audio and ranging data. In combination with the time of flight sensor the IMU helps reconstruct local ground profiles and supports coarse step length and cadence estimation for activity recognition.
+
+
+\subsection{Time of Flight Ranging}
+\paragraph{Hardware.}
+A VL53L1X time of flight module measures absolute distance in millimetres using an eye safe near infrared emitter and a SPAD receiver array. The sensor communicates over I2C at 400 kHz and is mounted at the front aperture of the enclosure so that it faces the ground ahead of the foot during natural walking. The sensor can measure up to 4 meters.
+In our recordings, stable ranges were typically achieved up to about 2 meters depending on lighting conditions.
+
+\paragraph{Software functions.}
+The firmware configures the device in continuous long range mode with a measurement timing budget of fifty milliseconds and an intermeasurement period of fifty milliseconds. A dedicated FreeRTOS task blocks until a new result is ready, reads the range and status, timestamps the event with \texttt{millis()}, and pushes the sample into a queue. At the end of each one second window the sampler empties the queue and stores the readings as an array with offsets relative to the packet timestamp. Up to thirty readings per packet are kept, which preserves the temporal structure of the one hertz multimodal message while maintaining a higher rate inside the window.
+
+\paragraph{Sensing roles.}
+The ranging channel complements vision, audio, and inertial sensing by providing direct geometric information. Mounted near the foot it can detect stairs, curbs, and low obstacles, estimate free space ahead, and track ground approach during stance to refine gait phase segmentation. Sequences of ranges reveal local floor profiles and surface undulation that are difficult to infer from audio alone. Variations in measured distance while turning provide cues about room size and layout. The time of flight measurements also add robustness when the camera view is occluded or lighting is poor, and they help disambiguate ambiguous IMU patterns on soft or compliant surfaces.
+
+
+\subsection{Multimodal Synchronization and Packetization}
+\paragraph{Acquisition schedule.}
+OnlyFeet follows a deterministic schedule per one second window. The IMU FIFO is frozen and copied, then restarted. The magnetometer and the latest time of flight values are read. The audio task delivers a one second PCM buffer. The camera captures one JPEG frame. A JSON document is built and printed to USB serial for live monitoring. The writer stores the JSON as \texttt{pkt\_\{index\}.json}, stores the WAV and stores the JPEG. The index increments for the next window.
+
+\paragraph{FreeRTOS tasking.}
+The firmware uses four tasks with explicit priorities. The audio task has the highest priority to avoid dropped samples. The sampler and writer tasks run on different cores to separate real time sampling from file system writes. The time of flight task shares the sampling core. Queues decouple tasks and provide back pressure. The packet queue accepts several ready to write packets. The time of flight queue buffers dozens of samples. The audio queue passes ownership of PCM buffers from the audio task to the writer.
+
+\paragraph{JSON schema.}
+Each packet contains a top level timestamp \texttt{ts}. The field \texttt{mag} holds a three axis magnetic field vector. The field \texttt{tof} is an array of readings with offset time in milliseconds, range, and status code. The field \texttt{IMU} is an array of entries. Each entry contains an incremental index \texttt{i} and two nested objects \texttt{a} and \texttt{g} with x, y, z components in physical units. The schema is stable and can be extended with optional fields when needed.
+\paragraph{Timestamps.}
+All timestamps are derived from \texttt{millis()} since boot. The packet timestamp defines the start of the one second window and is used to express the offset times of time of flight samples.
+
+\subsection{Mechanical Integration}
+\paragraph{Enclosure concept.}
+All electronics are mounted in a compact 3D printed housing with cable guides and strain relief. The camera has a dedicated aperture. The housing attaches to shoelaces through printed hooks and a flat backplate. The assembly can be mounted on the shoe without tools and can be removed quickly after a recording session. The enclosure protects connectors and prevents pressure points during walking.
+The housing includes a side opening for an external antenna, but the antenna was not attached in the recordings reported here.
+
+\paragraph{Battery and charging.}
+A single cell lithium polymer battery is integrated into the housing. The XIAO Sense board provides on board charging and power path management. Charging uses the USB C connector on the board. A small slide switch disconnects the battery for transport and storage.
+
+\subsection{Local Storage and File Layout}
+\paragraph{Session handling.}
+At boot the firmware mounts the micro SD card and creates the next available session directory named \texttt{/dataN}, where \texttt{N} increments with each boot to separate sessions. Files within a session follow the pattern \texttt{pkt\_\{index\}.json}, \texttt{rec\_\{index\}\_\{ts\}.wav}, and \texttt{img\_\{index\}\_\{ts\}.jpg}. This layout allows independent streaming and replay of each modality and simplifies dataset ingestion.
+
+\paragraph{Card configuration.}
+We use a 8 GB ATP micro SD card formatted as FAT32.
+
+\paragraph{Throughput and size.}
+At QVGA with quality 30 typical JPEG sizes are in the tens of kilobytes per frame. One second of mono audio at 16 kHz and 16 bit is 32 kB including WAV header. A one second JSON with one hundred IMU samples and several time of flight readings is usually below 20 kB. The sustained write rate remains well within the capability of common micro SD cards and keeps a safe margin for file system overhead.%Muss nochmal überarbeitet werden
+
+\subsection{Power and Energy Use}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{Figures/StartupPowercinsumption.png}
+  \caption{Startup current profile recorded with a Power Profiler Kit II. The first ten seconds show a peak of about \(234\,\mathrm{mA}\) during radio and peripheral bring up and an average of about \(47\,\mathrm{mA}\) while services stabilize. The later part of the trace shows periodic steps between roughly \(150\,\mathrm{mA}\) and \(210\,\mathrm{mA}\) when the camera captures a frame and the writer stores JPEG and WAV files to the micro SD card.}
+  \label{fig:power_startup}
+\end{figure}
+
+\paragraph{Measurement.}
+We measured current with a Power Profiler Kit II while running the default logging configuration. Figure~\ref{fig:power_startup} shows the startup behavior. After a short inrush the system peaks at about \(234\,\mathrm{mA}\) and then settles near \(40\text{–}50\,\mathrm{mA}\) while peripherals initialize. Once steady logging begins the average current during continuous operation is about \(200\,\mathrm{mA}\) with brief periodic increases when a JPEG is captured and files are written to the micro SD card.
+
+\paragraph{Runtime.}
+With a \(1{,}200\,\mathrm{mAh}\) lithium polymer cell the expected runtime is about five to six hours at the measured average of \(200\,\mathrm{mA}\). Actual runtime varies with image quality setting and SD card performance. The default configuration records locally and keeps wireless off to maximize efficiency.
+
+
+\subsection{Safety Considerations}
+\paragraph{Electrical and optical safety.}
+The time of flight emitter is class one eye safe. The battery is enclosed. The housing shields solder joints and headers. The camera aperture is chamfered to avoid sharp edges. Cables are routed away from moving parts and are fixed inside the housing.
+
+\paragraph{Thermal considerations.}
+Regulators and the camera warm up during extended operation. The enclosure includes the SoC and the camera board. Mounting on the shoe keeps warm components away from skin.
+
+\subsection{Summary}
+OnlyFeet delivers synchronized video, audio, inertial, and ranging data in a self contained logger. The FreeRTOS design maintains reliable motion capture while building one second packets that align all modalities. Files are written locally to a micro SD card, which makes the system convenient for field studies without a tether or a host. The compact housing attaches to shoelaces and the integrated battery charges over USB C, which supports rapid deployment in everyday environments.
+
+% ---------- 5 User Study Design ----------
+\section{Sensor analyses}
+This section reports pilot recordings used to validate \textit{OnlyFeet} as a multimodal logger and outlines the analysis criteria applied. The focus is on data fidelity, synchronization quality, and feasibility rather than statistical inference. Pilot recordings were collected by the authors and two additional participants in indoor and outdoor settings.
+
+\subsection{Research Questions and Hypotheses}
+\textbf{RQ1} Can \textit{OnlyFeet} record synchronized video, audio, IMU, and time of flight data with stable rates during natural walking in everyday environments? \\
+\textbf{RQ2} Do individual modalities contribute differently to the discriminability of locomotion contexts in the pilot recordings (e.g., indoor versus outdoor walking)? \\
+\textbf{RQ3} Is end to end latency and packet integrity sufficient for reliable offline analysis without packet loss or clock drift over short sessions?
+
+\noindent\textbf{H1} The device maintains target rates and shows no packet loss across short pilot sessions. \\
+\textbf{H2} IMU plus camera outperforms single modality baselines for activity recognition. \\
+\textbf{H3} Audio and time of flight add incremental gains when visual context is poor.
+
+\subsection{Participants}
+Pilot recordings were collected from the authors and two additional participants (\(n=3\)) in indoor and outdoor settings. The pilot focused on feasibility rather than demographic coverage.
+
+\subsection{Apparatus}
+\textit{OnlyFeet} is attached to the right shoe with the 3D printed mount. The micro SD card stores JSON packets, JPEG images, and WAV audio files. The internal clock provides packet timestamps. No external base station is required.
+
+\subsection{Tasks and Conditions}
+Participants performed natural walking indoors and outdoors at a comfortable pace. Two additional participants completed longer continuous recordings, while the authors collected shorter runs for setup and validation.
+
+\subsection{Procedure}
+The device was mounted on the right shoe and recordings were started after the built-in 8 s delay to avoid handling artifacts. Sessions varied in duration and were conducted in everyday environments. All data were stored locally on the micro SD card.
+
+\subsection{Measures}
+We focus on data integrity and synchronization checks in the pilot.
+\textbf{Data quality} per session:
+\begin{itemize}
+  \item Packet count at one hertz and missing packet rate.
+  \item IMU sample count per packet and variability around the target of about one hundred samples.
+  \item Time of flight readings per packet and status code distribution.
+  \item JPEG file size distribution and capture success rate.
+  \item Audio clipping percentage and missing buffer rate.
+\end{itemize}
+\textbf{Synchronization}:
+\begin{itemize}
+  \item Cross-correlation between accelerometer magnitude and audio envelope around footfalls.
+  \item Alignment of motion peaks with the frame index of visible motion events in the image stream.
+\end{itemize}
+\textbf{Exploratory recognition} (optional):
+\begin{itemize}
+  \item Offline classification accuracy for simple locomotion labels when available (e.g., indoor versus outdoor walking) using stratified cross validation.
+\end{itemize}
+
+\subsection{Data Processing}
+JSON packets are parsed and associated with the corresponding JPEG and WAV files by index and timestamp. Optional manual labels can be added when available.
+
+\subsection{Pilot Logging Summary}
+Across the pilot dataset analyzed here (14 sessions), packet timestamps maintained a consistent 1 s cadence with no missing packet indices (Table~\ref{tab:pilot_summary}). In sessions where the device was powered down during the final second, the terminal second was incomplete; we excluded those 9 terminal packets from analysis. The remaining 662 packets span session durations from 30 s to 77 s (mean 46.3 s) with a 1000 ms packet gap. IMU sample counts averaged 104.4 per packet (min 0, max 120), with one packet containing no IMU samples. Time of flight readings averaged 12.1 per packet (range 10 to 21), and no packets had empty ToF arrays.
+Small per-window count variation reflects FIFO accumulation and continuous ToF streaming that are decoupled from the 1 s packet boundary in the pilot firmware. For subsequent non-pilot recordings, we updated the firmware to reset the IMU FIFO at each window boundary, to schedule ToF reads at a fixed 50 ms cadence, and to trigger audio capture at the window start so that all modalities share the same timing reference.
+
+\begin{table}[t]
+  \centering
+  \caption{Pilot logging summary after removing terminal seconds affected by shutdown during recording.}
+  \label{tab:pilot_summary}
+  \begin{tabular}{p{0.62\columnwidth}c}
+    \textbf{Metric} & \textbf{Value} \\
+    \hline
+    Sessions & 14 \\
+    Packets (used) & 662 \\
+    Excluded terminal packets & 9 \\
+    Missing packet indices & 0 \\
+    Session duration (s) min/mean/max & 30 / 46.3 / 77 \\
+    Packet gap (ms) mean/min/max & 1000 / 1000 / 1000 \\
+    IMU samples per packet mean/min/max & 104.4 / 0 / 120 \\
+    ToF readings per packet mean/min/max & 12.1 / 10 / 21 \\
+  \end{tabular}
+\end{table}
+
+\subsection{Analysis Plan}
+Given the pilot scale, analysis is limited to descriptive statistics for data quality and synchronization metrics. Inferential comparisons and modality ablations are reserved for larger follow up studies with sufficient sample size.
+
+\subsection{Sample Size Considerations}
+The pilot uses a small convenience sample (\(n=3\)) intended to expose logging issues and validate stability. It is not powered for inferential comparisons or modality ablations.
+
+\subsection{Ethics and Safety}
+The pilot involves normal walking in everyday environments. The camera is oriented toward the ground to limit incidental capture, but audio can still record bystanders; future deployments should follow local ethics guidance and minimize incidental recording.
+
+\subsection{Preregistration and Materials}
+For future larger studies, we plan to archive the protocol, firmware version, and analysis scripts with a date and commit hash and to share a small de identified sample for reproducibility.
+
+\subsection{Limitations}
+The pilot uses a small convenience sample and a limited set of indoor and outdoor environments, which limits generalization. The recordings provide feasibility evidence but do not support strong claims about recognition performance.
+
+
+% ---------- 7 Discussion ----------
+\section{Discussion}
+
+\subsection{Key Findings}
+
+\begin{itemize}
+  \item \textbf{Synchronized multimodal capture is feasible with compact hardware.}
+        The FreeRTOS design sustained the intended schedule of one hertz packet construction while the IMU sampled at about one hundred hertz and the time of flight sensor operated continuously. Audio recorded continuous one second chunks without gaps and the writer stored JSON, WAV, and JPEG files for each window on the micro SD card. Pilot recordings indoors and outdoors showed stable capture across modalities under this cadence.
+
+  \item \textbf{Each modality adds complementary evidence about context.}
+        The IMU provided reliable step timing and gait segmentation. The camera frames supplied scene and surface cues and basic brightness trends for indoor and outdoor inference. The time of flight sensor acted as a compact sonar near the foot and revealed stairs, curbs, and free space in front of the shoe. The audio track captured footfall signatures and reverberation that reflected room size and material. Together these signals created a redundant description of locomotion that is stronger than any single channel.
+
+  \item \textbf{Local storage simplifies deployment and improves robustness.}
+        Writing packets to a session directory on the micro SD card avoided dependence on a host or a wireless link. The simple file naming convention made post processing straightforward. USB serial remained available for live monitoring without affecting the sampling cadence.
+
+  \item \textbf{Power consumption is compatible with multi hour recordings.}
+        Bench measurements with a Power Profiler Kit II indicated an average current of about two hundred milliampere under the default configuration with camera, audio, IMU, and time of flight active. A twelve hundred milliampere hour cell therefore yields roughly five to six hours of continuous logging, which is suitable for short field sessions.
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+\paragraph{Pilot scale and environment coverage.}
+The current recordings are short and involve a small convenience sample in a limited set of locations. A larger study with more surfaces, lighting, and weather is required to estimate generalization.
+
+\paragraph{Visual occlusion and motion blur.}
+A foot mounted camera can be occluded by the leg during stance and may blur during fast swings. Future revisions will explore exposure control, modest resolution increases, and simple deblurring or optical flow methods in post processing. Alternate placements on the shoe may also be evaluated for coverage and stability.
+
+\paragraph{Magnetometer robustness.}
+The magnetometer is sensitive to local soft iron and hard iron effects from the battery, wiring, and metal in the shoe. A calibration routine and compensation model will be added. If residual bias remains high, heading will rely more on gyroscope integration and time of flight trends.
+
+\paragraph{Ranging edge cases.}
+The time of flight sensor can return degraded readings on very dark, highly absorbent, or very reflective floors. Multi zone ranging, adaptive timing budgets, and fusion with camera depth cues are promising mitigations.
+
+\paragraph{Audio artifacts.}
+Wind, clothing contact, and cable vibration can contaminate the microphone. Mechanical damping inside the enclosure and simple spectral gating will be applied. Short calibration claps at the start and end of sessions will help track gain and noise.
+
+\paragraph{Clocking and session integrity.}
+Timestamps are derived from the device clock. For multi device studies we plan to add absolute time using a small real time clock or a periodic alignment pulse. For very long sessions we will also evaluate a container format or an index file that summarizes the packet sequence to simplify integrity checks.
+
+\paragraph{On device analytics.}
+The current firmware is a logger. Future work will explore tiny models for basic activity labels on the device and optional live previews over USB or WiFi. Privacy preserving defaults will keep wireless disabled unless explicitly enabled for experiments.
+
+\section{Conclusion}
+
+We introduced \textit{OnlyFeet}, a compact and low cost multimodal recorder built around the Seeed XIAO ESP32S3 Sense. The system integrates a camera, a digital microphone, a nine axis IMU, and a time of flight ranging sensor. A FreeRTOS schedule maintains a one second packet cadence while preserving high rate motion capture. Each window produces a JSON file with structured sensor data together with a time aligned JPEG and a WAV file, all stored locally on a micro SD card. A small 3D printed housing attaches to shoelaces and contains an integrated rechargeable battery that charges over USB C. 
+
+Pilot recordings indicate that the platform delivers synchronized and stable data across modalities and that each channel contributes complementary information about locomotion and environment. These findings support the use of \textit{OnlyFeet} as a practical base for collecting multimodal datasets in everyday settings and for probing recognition feasibility. Next steps include larger and more diverse data collection, improved calibration and clocking, and optional on device analytics for rapid feedback during field work.```
+
+
+% ---------- Acknowledgements ----------
+\begin{acks}
+%<< ≈ 50 words – funding, hardware sponsors, participants >>
+\end{acks}
+
+% ---------- References ----------
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references,library}
+\end{document}

@@ -2,10 +2,30 @@
  * app.js – Main entry: folder loading, orchestration
  */
 (() => {
-  const folderInput = document.getElementById('folder-input');
-  const sessionInfo = document.getElementById('session-info');
-  const cameraImg = document.getElementById('camera-img');
+  const folderInput  = document.getElementById('folder-input');
+  const sessionInfo  = document.getElementById('session-info');
+  const cameraImg    = document.getElementById('camera-img');
+  const cameraLabel  = document.getElementById('camera-label');
   const volumeSlider = document.getElementById('volume-slider');
+
+  // Track the currently displayed packet so onTofFrame can access it
+  let currentPkt = null;
+
+  /** Show the mid-window photo (t≈500ms) and update label */
+  function showMidPhoto(pkt) {
+    const url = pkt.midImgUrl || pkt.imgUrl || null;
+    if (url) cameraImg.src = url;
+    else cameraImg.removeAttribute('src');
+    cameraLabel.textContent = pkt.midImgUrl ? 'mid  ≈500 ms' : 'end  ≈1000 ms+';
+  }
+
+  /** Show the end-of-window photo (t≈1000ms+) and update label */
+  function showEndPhoto(pkt) {
+    const url = pkt.imgUrl || pkt.midImgUrl || null;
+    if (url) cameraImg.src = url;
+    else cameraImg.removeAttribute('src');
+    cameraLabel.textContent = pkt.imgUrl ? 'end  ≈1000 ms+' : 'mid  ≈500 ms';
+  }
 
   // Initialize components
   TofView.init();
@@ -42,13 +62,9 @@
       // Wire up timeline
       Timeline.init(data.packets, {
         onPacketChange: (pkt, idx) => {
-          // Camera image
-          if (pkt.imgUrl) {
-            cameraImg.src = pkt.imgUrl;
-          } else {
-            cameraImg.removeAttribute('src');
-          }
-
+          currentPkt = pkt;
+          // Bei Paketwechsel immer mit dem mid-Foto starten (t≈0..500 ms)
+          showMidPhoto(pkt);
           // Audio
           AudioPlayer.play(pkt.wavUrl);
         },
@@ -59,6 +75,14 @@
         },
         onTofFrame: (frame, frameIdx) => {
           TofView.updateFrame(frame);
+          // Foto synchron zum ToF-Zeitstempel wechseln:
+          // frame.t < 500ms  → mid-Foto (erste Fensterhälfte)
+          // frame.t >= 500ms → end-Foto  (zweite Fensterhälfte)
+          if (currentPkt) {
+            const tMs = (frame && frame.t != null) ? frame.t : 0;
+            if (tMs < 500) showMidPhoto(currentPkt);
+            else           showEndPhoto(currentPkt);
+          }
         }
       });
     } catch (err) {
