@@ -1,0 +1,122 @@
+name: ESP32 PlatformIO Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'platformio.ini'
+      - '.github/workflows/esp32-platformio-build-release.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio "click==8.1.7"
+
+      - name: Build firmware
+        run: pio run -e xiao_esp32s3_sense -j 2
+
+      - name: List build artifacts
+        run: ls -lh .pio/build/xiao_esp32s3_sense/
+
+      - name: Generate release notes
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          DATE=$(date -u +'%Y-%m-%d %H:%M UTC')
+          FW_SIZE=$(du -sh .pio/build/xiao_esp32s3_sense/firmware.bin 2>/dev/null | cut -f1)
+          cat > RELEASE_BODY.md <<EOF
+          ## OnlyFeet Firmware
+
+          **Board:** Seeed XIAO ESP32S3 Sense
+          **Built:** ${DATE}
+          **Commit:** ${SHORT_SHA}
+
+          ### Sensors
+          - ICM20948 IMU (Acc + Gyro FIFO @ ~100 Hz, Mag 1 Hz)
+          - VL53L5CX 8×8 ToF (15 Hz, continuous)
+          - PDM Microphone (16 kHz, 16-bit mono WAV)
+          - OV2640 Camera (QVGA JPEG, 2 frames/s)
+
+          ### Flash Instructions
+          Use [esptool.py](https://docs.espressif.com/projects/esptool/en/latest/) or PlatformIO upload:
+          \`\`\`
+          esptool.py --chip esp32s3 write_flash 0x0 bootloader.bin 0x8000 partitions.bin 0x10000 firmware.bin
+          \`\`\`
+
+          ### Artifacts
+          - \`firmware.bin\` (${FW_SIZE}) — main application
+          - \`bootloader.bin\` — ESP32S3 bootloader
+          - \`partitions.bin\` — partition table
+          EOF
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: onlyfeet-firmware
+          path: |
+            .pio/build/xiao_esp32s3_sense/firmware.bin
+            .pio/build/xiao_esp32s3_sense/bootloader.bin
+            .pio/build/xiao_esp32s3_sense/partitions.bin
+          if-no-files-found: error
+
+      - name: Compute release tag
+        if: github.ref == 'refs/heads/main'
+        id: relmeta
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          DATE=$(date -u +'%Y%m%d-%H%M')
+          echo "tag=fw-${DATE}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "name=Firmware ${DATE} (${SHORT_SHA})" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.relmeta.outputs.tag }}
+          name: ${{ steps.relmeta.outputs.name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body_path: RELEASE_BODY.md
+          files: |
+            .pio/build/xiao_esp32s3_sense/firmware.bin
+            .pio/build/xiao_esp32s3_sense/bootloader.bin
+            .pio/build/xiao_esp32s3_sense/partitions.bin
+
+      - name: Create GitHub Release (tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body_path: RELEASE_BODY.md
+          files: |
+            .pio/build/xiao_esp32s3_sense/firmware.bin
+            .pio/build/xiao_esp32s3_sense/bootloader.bin
+            .pio/build/xiao_esp32s3_sense/partitions.bin

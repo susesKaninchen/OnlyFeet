@@ -74,8 +74,8 @@ static constexpr size_t MID_PHOTO_QUEUE_LEN = 2;
 static constexpr uint32_t SAMPLER_STACK_SIZE   = 8192;
 static constexpr uint32_t WRITER_STACK_SIZE    = 8192;
 static constexpr uint32_t TOF_STACK_SIZE       = 6144;
-static constexpr uint32_t AUDIO_STACK_SIZE     = 4096;
-static constexpr uint32_t MID_PHOTO_STACK_SIZE = 4096;
+static constexpr uint32_t AUDIO_STACK_SIZE     = 6144;
+static constexpr uint32_t MID_PHOTO_STACK_SIZE = 6144;
 
 // Higher number = higher priority. Audio must be highest to avoid losing samples.
 static constexpr UBaseType_t AUDIO_PRIORITY      = 5;
@@ -441,7 +441,8 @@ void samplerTask(void* arg) {
     }
 
     // --- Read IMU FIFO ---
-    size_t count = myIMU.getNumberOfFifoDataSets();
+    int16_t rawCount = myIMU.getNumberOfFifoDataSets();
+    size_t count = (rawCount > 0) ? static_cast<size_t>(rawCount) : 0;
     if (count > MAX_FIFO_SETS) count = MAX_FIFO_SETS;
     for (size_t i = 0; i < count; ++i) {
       xyzFloat acc, gyr;
