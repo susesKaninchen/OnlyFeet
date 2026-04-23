@@ -1,0 +1,51 @@
+{
+  "session": 6,
+  "total_jumps": 9,
+  "jump_events": [
+    {
+      "jump_index": 0,
+      "timestamp_ms": 1776581785140,
+      "magnitude_ms2": 45.46181214668283
+    },
+    {
+      "jump_index": 1,
+      "timestamp_ms": 1776581797678,
+      "magnitude_ms2": 26.80712838912746
+    },
+    {
+      "jump_index": 2,
+      "timestamp_ms": 1776581799783,
+      "magnitude_ms2": 29.679881606061418
+    },
+    {
+      "jump_index": 3,
+      "timestamp_ms": 1776581805906,
+      "magnitude_ms2": 43.812138645959365
+    },
+    {
+      "jump_index": 4,
+      "timestamp_ms": 1776581807789,
+      "magnitude_ms2": 56.48080372252739
+    },
+    {
+      "jump_index": 5,
+      "timestamp_ms": 1776581812573,
+      "magnitude_ms2": 71.49895022595622
+    },
+    {
+      "jump_index": 6,
+      "timestamp_ms": 1776581820348,
+      "magnitude_ms2": 54.36074381212548
+    },
+    {
+      "jump_index": 7,
+      "timestamp_ms": 1776581826111,
+      "magnitude_ms2": 67.3024936052233
+    },
+    {
+      "jump_index": 8,
+      "timestamp_ms": 1776581828541,
+      "magnitude_ms2": 40.443034275170014
+    }
+  ]
+}

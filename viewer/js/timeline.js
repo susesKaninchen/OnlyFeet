@@ -16,6 +16,10 @@ const Timeline = (() => {
   let onPacketChange = null;
   let onTofFrame = null;
   let onImuSample = null;
+  let onTimeUpdate = null;
+  let onPlay = null;
+  let onPause = null;
+  let onSpeedChange = null;
 
   // DOM
   const slider = document.getElementById('timeline-slider');
@@ -30,30 +34,34 @@ const Timeline = (() => {
     onPacketChange = callbacks.onPacketChange || (() => {});
     onTofFrame = callbacks.onTofFrame || (() => {});
     onImuSample = callbacks.onImuSample || (() => {});
+    onTimeUpdate = callbacks.onTimeUpdate || (() => {});
+    onPlay  = callbacks.onPlay  || (() => {});
+    onPause = callbacks.onPause || (() => {});
+    onSpeedChange = callbacks.onSpeedChange || (() => {});
     currentIndex = 0;
     playing = false;
 
     slider.max = Math.max(0, packets.length - 1);
     slider.value = 0;
     updateDisplay();
-    emitPacket();
+    emitPacket('seek');
   }
 
-  /** Tatsächliche Paket-Dauer in ms aus Timestamp-Delta (gemeinsame Quelle für alle Animationen) */
+  /** Tatsächliche Paket-Dauer in ms aus Index-Delta (passend zum Audio-Padding) */
   function getDurationMs() {
     if (currentIndex < packets.length - 1) {
-      const dt = packets[currentIndex + 1].ts - packets[currentIndex].ts;
-      if (dt > 0 && dt < 5000) return dt;
+      const idxDiff = packets[currentIndex + 1].index - packets[currentIndex].index;
+      return idxDiff * 1000;
     }
     return 1000;
   }
 
-  function emitPacket() {
+  function emitPacket(reason) {
     if (!packets.length) return;
     const pkt = packets[currentIndex];
     slider.value = currentIndex;
     updateDisplay();
-    onPacketChange(pkt, currentIndex);
+    onPacketChange(pkt, currentIndex, { reason: reason || 'advance' });
 
     // When paused: show first frame/sample only, no animation
     if (playing) {
@@ -71,14 +79,21 @@ const Timeline = (() => {
     stopImuAnimation();
     if (!pkt.json) return;
 
+    onTimeUpdate(pkt.ts);
+
     if (pkt.json.tof && pkt.json.tof.length) {
       onTofFrame(pkt.json.tof[0], 0);
     }
     if (pkt.json.IMU && pkt.json.IMU.length) {
       const mag = pkt.json.mag || null;
+      const dt = 1.0 / pkt.json.IMU.length;
+      
+      // Nutze die ZEIT seit Start statt Paketsummen für den Index
+      const absoluteBaseIdx = Math.floor((pkt.ts - packets[0].ts) / 10);
+      
       // Push all samples at once so charts/orientation reflect this packet
       for (let i = 0; i < pkt.json.IMU.length; i++) {
-        onImuSample(pkt.json.IMU[i], i === 0 ? mag : null, i);
+        onImuSample(pkt.json.IMU[i], i === 0 ? mag : null, i, dt, absoluteBaseIdx + i);
       }
     }
   }
@@ -108,31 +123,51 @@ const Timeline = (() => {
 
   function startImuAnimation(pkt, durationMs) {
     stopImuAnimation();
-    if (!pkt.json || !pkt.json.IMU || !pkt.json.IMU.length) return;
+    
+    // Wenn das Paket keine IMU Daten hat, trotzdem die Zeitachse weiterbewegen
+    const samples = (pkt.json && pkt.json.IMU) ? pkt.json.IMU : [];
+    const mag = (pkt.json && pkt.json.mag) ? pkt.json.mag : null;
+    const n = samples.length;
+    const dataDurationMs = n > 0 ? 1000 : 0; // Daten sind max 1 Sekunde lang, der Rest ist Lücke
+    const dtReal = n > 0 ? (1.0 / n) : 0;
+    
+    const absoluteBaseIdx = Math.floor((pkt.ts - packets[0].ts) / 10);
 
-    const samples = pkt.json.IMU;
-    const mag = pkt.json.mag || null;
-    currentImuSample = 0;
-    onImuSample(samples[0], mag, 0);
+    let startTime = performance.now();
+    currentImuSample = -1;
 
-    if (samples.length <= 1) return;
+    function anim(now) {
+      if (!playing) return;
+      const elapsed = (now - startTime) * speed;
+      
+      onTimeUpdate(pkt.ts + elapsed);
 
-    // Interval aus tatsächlicher Paket-Dauer ableiten statt 10ms hardcoded.
-    // Dadurch läuft die IMU-Animation genau so lang wie das Paket.
-    const intervalMs = (durationMs / speed) / samples.length;
-    imuTimerId = setInterval(() => {
-      currentImuSample++;
-      if (currentImuSample < samples.length) {
-        onImuSample(samples[currentImuSample], null, currentImuSample);
-      } else {
-        stopImuAnimation();
+      if (n > 0) {
+          const sampleIdx = Math.floor(elapsed / (dataDurationMs / n));
+          if (sampleIdx > currentImuSample && currentImuSample < n - 1) {
+            for (let i = currentImuSample + 1; i <= Math.min(sampleIdx, n - 1); i++) {
+              onImuSample(samples[i], i === 0 ? mag : null, i, dtReal, absoluteBaseIdx + i);
+            }
+            currentImuSample = sampleIdx;
+          }
       }
-    }, intervalMs);
+      
+      if (elapsed < durationMs) {
+        imuTimerId = requestAnimationFrame(anim);
+      } else if (currentImuSample < n - 1 && n > 0) {
+        // Reste flushen
+        for (let i = currentImuSample + 1; i <= n - 1; i++) {
+          onImuSample(samples[i], i === 0 ? mag : null, i, dtReal, absoluteBaseIdx + i);
+        }
+      }
+    }
+    imuTimerId = requestAnimationFrame(anim);
   }
+
 
   function stopImuAnimation() {
     if (imuTimerId !== null) {
-      clearInterval(imuTimerId);
+      cancelAnimationFrame(imuTimerId);
       imuTimerId = null;
     }
   }
@@ -146,6 +181,7 @@ const Timeline = (() => {
     if (!packets.length) return;
     playing = true;
     btnPlay.textContent = '⏸ Pause';
+    onPlay();
     scheduleNext();
   }
 
@@ -158,6 +194,7 @@ const Timeline = (() => {
     }
     stopTofAnimation();
     stopImuAnimation();
+    onPause();
   }
 
   function togglePlay() {
@@ -171,7 +208,7 @@ const Timeline = (() => {
       if (!playing) return;
       if (currentIndex < packets.length - 1) {
         currentIndex++;
-        emitPacket();
+        emitPacket('advance');
         scheduleNext();
       } else {
         pause(); // end of session
@@ -183,7 +220,7 @@ const Timeline = (() => {
     const wasPlaying = playing;
     if (playing) pause();
     currentIndex = Math.max(0, Math.min(idx, packets.length - 1));
-    emitPacket();
+    emitPacket('seek');
     if (wasPlaying) play();
   }
 
@@ -208,6 +245,7 @@ const Timeline = (() => {
   btnNext.addEventListener('click', () => { if (currentIndex < packets.length - 1) seekTo(currentIndex + 1); });
   speedSelect.addEventListener('change', () => {
     speed = parseFloat(speedSelect.value);
+    onSpeedChange(speed);
     if (playing) {
       pause();
       play();

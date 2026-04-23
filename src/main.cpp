@@ -19,6 +19,19 @@ I2SClass I2S;
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
+// Verbose per-packet logging (Window end / Packet sent / PKT / OK saved).
+// 0 = nur Errors und Warnings im Loop — spart UART-Zeit und verhindert, dass
+// der TX-Puffer blockiert, wenn SD-Spikes mehrere Logs pro Sekunde erzeugen.
+// Auf 1 setzen zum Debuggen.
+#define LOG_VERBOSE 0
+#if LOG_VERBOSE
+  #define LOGV(...)    Serial.printf(__VA_ARGS__)
+  #define LOGV_LN(s)   Serial.println(s)
+#else
+  #define LOGV(...)    ((void)0)
+  #define LOGV_LN(s)   ((void)0)
+#endif
+
 /********* Audio / SD configuration *********/
 static constexpr int MIC_DATA_PIN = 42;
 static constexpr int MIC_CLK_PIN  = 41;
@@ -26,7 +39,10 @@ static constexpr int SD_CS_PIN    = 21;
 static constexpr uint16_t AUDIO_FS   = 16000;  // 16 kHz
 static constexpr uint8_t  AUDIO_BITS = 16;     // 16-bit
 static constexpr uint8_t  AUDIO_CHAN = 1;      // Mono
-static constexpr uint32_t AUDIO_PCM_SIZE = AUDIO_FS * (AUDIO_BITS / 8) * AUDIO_CHAN; // 1 second of audio
+// Genau 1000 ms pro WAV-Datei. audioTask liest kontinuierlich — aufeinander-
+// folgende WAVs enthalten lückenlos aufeinanderfolgende Samples aus dem I2S-
+// DMA-Stream, ohne Überlappung.
+static constexpr uint32_t AUDIO_PCM_SIZE = AUDIO_FS * (AUDIO_BITS / 8) * AUDIO_CHAN;
 static constexpr uint32_t WAV_HEADER_SIZE = 44;
 // IIR High-Pass α: y[n] = x[n] - x[n-1] + α·y[n-1]
 // Cutoff ≈ (1-α)·fs/(2π) → mit 0.999 @ 16 kHz ≈ 2.5 Hz (DC-Removal)
@@ -62,20 +78,26 @@ constexpr uint32_t PACKET_INTERVAL_MS = 1000;
 constexpr size_t   MAX_FIFO_SETS      = 120;
 constexpr size_t   MAX_TOF_READINGS   = 16;  // 15 Hz × 1 s = 15 Frames, 16 mit Puffer
 constexpr uint8_t  TOF_ZONES          = 64;  // 8×8 Auflösung
+// FAT32-Directory-Scan ist O(n) pro SD.open(). Bei 4 Files/Paket wächst ein
+// flaches Dir linear und Writer-Zeit steigt stetig. Alle 30 Pakete ein neues
+// Sub-Dir → 1 Bucket = 30 s, jedes Verzeichnis bleibt typ. ≤ 120 Einträge.
+constexpr uint32_t PACKETS_PER_BUCKET = 30;
 
 /********* Task & Queue Configuration *********/
 static constexpr uint32_t JSON_DOC_SIZE = 32768;
 
-static constexpr size_t PACKET_QUEUE_LEN    = 8;
+static constexpr size_t PACKET_QUEUE_LEN    = 16;  // absorbiert SD-Erase/GC-Spikes bis ~16 s
 static constexpr size_t TOF_QUEUE_LEN       = 20;  // 15 Hz × ~1.3 s Puffer
-static constexpr size_t AUDIO_QUEUE_LEN     = 2;
+static constexpr size_t AUDIO_QUEUE_LEN     = 4;  // Jitter-Puffer für kontinuierlichen I2S-Stream
 static constexpr size_t MID_PHOTO_QUEUE_LEN = 2;
+static constexpr size_t END_PHOTO_QUEUE_LEN = 2;
 
 static constexpr uint32_t SAMPLER_STACK_SIZE   = 8192;
 static constexpr uint32_t WRITER_STACK_SIZE    = 8192;
 static constexpr uint32_t TOF_STACK_SIZE       = 6144;
 static constexpr uint32_t AUDIO_STACK_SIZE     = 6144;
 static constexpr uint32_t MID_PHOTO_STACK_SIZE = 6144;
+static constexpr uint32_t END_PHOTO_STACK_SIZE = 6144;
 
 // Higher number = higher priority. Audio must be highest to avoid losing samples.
 static constexpr UBaseType_t AUDIO_PRIORITY      = 5;
@@ -83,6 +105,7 @@ static constexpr UBaseType_t SAMPLER_PRIORITY    = 4;
 static constexpr UBaseType_t WRITER_PRIORITY     = 3;
 static constexpr UBaseType_t TOF_PRIORITY        = 3;
 static constexpr UBaseType_t MID_PHOTO_PRIORITY  = 2;  // unterhalb Writer — Bild nicht zeitkritisch
+static constexpr UBaseType_t END_PHOTO_PRIORITY  = 2;
 
 bool hasMag = false;
 bool hasTOF = false;
@@ -91,6 +114,7 @@ struct IMUSample { float ax, ay, az, gx, gy, gz; };
 struct TOFSample  { uint32_t ts_ms; int16_t distance_mm[TOF_ZONES]; uint8_t target_status[TOF_ZONES]; };
 struct TOFReading { uint32_t ts_offset_ms; int16_t distance_mm[TOF_ZONES]; uint8_t target_status[TOF_ZONES]; };
 struct MidPhoto   { uint8_t* buf; size_t len; };
+struct EndPhoto   { uint8_t* buf; size_t len; };
 
 /********* Globals *********/
 uint32_t  mediaCounter = 0;
@@ -99,9 +123,11 @@ QueueHandle_t gPacketQueue    = nullptr;
 QueueHandle_t gTofQueue       = nullptr;
 QueueHandle_t gAudioQueue     = nullptr;
 QueueHandle_t gMidPhotoQueue  = nullptr;
+QueueHandle_t gEndPhotoQueue  = nullptr;
 TaskHandle_t gAudioTaskHandle    = nullptr;
 TaskHandle_t gTofTaskHandle      = nullptr;
 TaskHandle_t gMidPhotoTaskHandle = nullptr;
+TaskHandle_t gEndPhotoTaskHandle = nullptr;
 
 
 // Packet sent from Sampler to Writer
@@ -117,6 +143,8 @@ struct Packet {
   size_t   pcmSize;
   uint8_t *midImgBuf; // malloc'ed mid-window JPEG (ownership passed to writer)
   size_t   midImgLen;
+  uint8_t *endImgBuf; // malloc'ed end-of-window JPEG (ownership passed to writer)
+  size_t   endImgLen;
 };
 
 /********* Forward declarations *********/
@@ -129,6 +157,7 @@ void samplerTask(void* arg);
 void writerTask(void* arg);
 void buildJson(const Packet& pkt, JsonDocument& doc);
 void midPhotoTask(void* arg);
+void endPhotoTask(void* arg);
 uint8_t* create_wav_file_buffer(const uint8_t* pcm_data, size_t pcm_data_size, size_t* wav_file_size);
 
 /********* Arduino setup *********/
@@ -153,12 +182,17 @@ void setup() {
   }
 
   /* ---- SD card ---- */
+  // Default SD.begin() nutzt nur 4 MHz SPI-Clock — viel zu langsam für unseren
+  // Datenstrom (~80 KB/s payload + 4 file open/close pro Paket). 40 MHz ist
+  // das SPI-Maximum des ESP32S3; bei kurzen Leitungen und einer Class-10/A1-Karte
+  // auf der XIAO-Sense-Verdrahtung stabil und liefert ~10× Durchsatz gegenüber Default.
   Serial.println("Mounting SD …");
-  if (!SD.begin(SD_CS_PIN)) {
+  if (!SD.begin(SD_CS_PIN, SPI, 40000000)) {
     Serial.println("ERR SD mount failed");
     while(1);
   }
-  Serial.println("OK. SD ready");
+  Serial.printf("OK. SD ready (SPI @ 40 MHz, card size %llu MB)\n",
+                SD.cardSize() / (1024ULL * 1024ULL));
 
   // Find next available data directory
   int n = 0;
@@ -178,7 +212,8 @@ void setup() {
   gTofQueue      = xQueueCreate(TOF_QUEUE_LEN,       sizeof(TOFSample));
   gAudioQueue    = xQueueCreate(AUDIO_QUEUE_LEN,     sizeof(uint8_t*));
   gMidPhotoQueue = xQueueCreate(MID_PHOTO_QUEUE_LEN, sizeof(MidPhoto));
-  if (!gPacketQueue || !gTofQueue || !gAudioQueue || !gMidPhotoQueue) {
+  gEndPhotoQueue = xQueueCreate(END_PHOTO_QUEUE_LEN, sizeof(EndPhoto));
+  if (!gPacketQueue || !gTofQueue || !gAudioQueue || !gMidPhotoQueue || !gEndPhotoQueue) {
     Serial.println("ERR queue create failed");
     while(1);
   }
@@ -189,7 +224,8 @@ void setup() {
   BaseType_t ok3 = xTaskCreatePinnedToCore(tofTask,      "tof",      TOF_STACK_SIZE,       nullptr, TOF_PRIORITY,       &gTofTaskHandle,      0);
   BaseType_t ok4 = xTaskCreatePinnedToCore(audioTask,    "audio",    AUDIO_STACK_SIZE,     nullptr, AUDIO_PRIORITY,     &gAudioTaskHandle,    0);
   BaseType_t ok5 = xTaskCreatePinnedToCore(midPhotoTask, "midphoto", MID_PHOTO_STACK_SIZE, nullptr, MID_PHOTO_PRIORITY, &gMidPhotoTaskHandle, 1);
-  if (ok1 != pdPASS || ok2 != pdPASS || ok3 != pdPASS || ok4 != pdPASS || ok5 != pdPASS) {
+  BaseType_t ok6 = xTaskCreatePinnedToCore(endPhotoTask, "endphoto", END_PHOTO_STACK_SIZE, nullptr, END_PHOTO_PRIORITY, &gEndPhotoTaskHandle, 1);
+  if (ok1 != pdPASS || ok2 != pdPASS || ok3 != pdPASS || ok4 != pdPASS || ok5 != pdPASS || ok6 != pdPASS) {
     Serial.println("ERR task create failed");
     while(1);
   }
@@ -216,11 +252,13 @@ void setupAudio() {
   Serial.println("OK. I2S driver ready.");
 }
 
-/********* Audio Task (asynchronous recording) *********/
+/********* Audio Task (kontinuierlich — liest I2S-DMA ohne Unterbrechung) *********/
 void audioTask(void* arg) {
+  // I2S-DMA läuft ab I2S.begin() kontinuierlich. Wir lesen fortlaufend
+  // 1000-ms-Blöcke — aufeinanderfolgende Blöcke enthalten lückenlos
+  // aufeinanderfolgende Samples. Keine Notification-Synchronisation, damit
+  // der DMA-Ringpuffer nie überläuft.
   for (;;) {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    // Allocate a new buffer for each audio chunk.
     uint8_t* pcm_buf = (uint8_t*)malloc(AUDIO_PCM_SIZE);
     if (!pcm_buf) {
         Serial.println("ERR audioTask failed to allocate pcm_buf");
@@ -255,8 +293,9 @@ void audioTask(void* arg) {
       }
     }
 
-    // Try to send the pointer of the *filled* buffer to the sampler task.
-    if (xQueueSend(gAudioQueue, &pcm_buf, pdMS_TO_TICKS(50)) != pdPASS) {
+    // Non-blocking: wenn Queue voll (Sampler hängt hinterher), Buffer verwerfen
+    // und sofort den nächsten I2S-Read starten — DMA-Stream darf nicht stocken.
+    if (xQueueSend(gAudioQueue, &pcm_buf, 0) != pdPASS) {
       Serial.println("WARN audio queue full, dropping audio data");
       free(pcm_buf);
     }
@@ -290,6 +329,38 @@ void midPhotoTask(void* arg) {
     if (xQueueSend(gMidPhotoQueue, &mp, pdMS_TO_TICKS(50)) != pdPASS) {
       if (buf) free(buf);
       Serial.println("WARN mid-photo queue full, dropping");
+    }
+  }
+}
+
+/********* End-of-window Photo Task — entkoppelt Kamera vom writerTask *********/
+void endPhotoTask(void* arg) {
+  for (;;) {
+    // Notified von samplerTask bei Fenster-Start — capture spät im Fenster,
+    // damit das Foto rechtzeitig in der Queue liegt, bevor samplerTask am
+    // nächsten Fenster-Ende (~1000 ms später) abfragt.
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    // Warten bis kurz vor Fenster-Ende (~600 ms), dann capturen.
+    // esp_camera_fb_get + memcpy braucht typ. 200-400 ms → fertig um ~900 ms.
+    vTaskDelay(pdMS_TO_TICKS((PACKET_INTERVAL_MS * 6) / 10));
+
+    uint8_t* buf = nullptr;
+    size_t   len = 0;
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (fb) {
+      buf = (uint8_t*)malloc(fb->len);
+      if (buf) {
+        memcpy(buf, fb->buf, fb->len);
+        len = fb->len;
+      }
+      esp_camera_fb_return(fb);
+    }
+
+    EndPhoto ep = {buf, len};
+    if (xQueueSend(gEndPhotoQueue, &ep, pdMS_TO_TICKS(50)) != pdPASS) {
+      if (buf) free(buf);
+      Serial.println("WARN end-photo queue full, dropping");
     }
   }
 }
@@ -352,10 +423,15 @@ void setupIMU() {
     Serial.println("WARN Magnetometer init failed — continuing without");
   }
 
-  myIMU.setAccRange(ICM20948_ACC_RANGE_2G);
+  // Range gewählt nach data19-Analyse: bei ±2g clippen 30.8% der Samples,
+  // bei ±250 dps 27% → beides zu klein für Fuß-Dynamik. ±8g / ±1000 dps
+  // gibt Headroom für Gehen+leichtes Laufen, DLPF_6 filtert das 4× höhere
+  // Quantisierungsrauschen weg.
+  myIMU.setAccRange(ICM20948_ACC_RANGE_8G);
   myIMU.setAccDLPF(ICM20948_DLPF_6);
   myIMU.setAccSampleRateDivider(10);
 
+  myIMU.setGyrRange(ICM20948_GYRO_RANGE_1000);
   myIMU.setGyrDLPF(ICM20948_DLPF_6);
   myIMU.setGyrSampleRateDivider(10);
 
@@ -406,17 +482,21 @@ void samplerTask(void* arg) {
   TickType_t lastWake = xTaskGetTickCount();
   uint32_t windowStartMs = millis();
 
+  // FIFO einmal starten und dann *dauerhaft* laufen lassen — kein reset/start
+  // pro Fenster. So gehen auch Samples, die während des I2C-Readouts (~57 ms)
+  // entstehen, nicht verloren; sie landen einfach im nächsten Paket.
   myIMU.resetFifo();
   myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
   // Stale ToF-Samples verwerfen, bevor das erste Fenster beginnt
   { TOFSample tmp; while (xQueueReceive(gTofQueue, &tmp, 0) == pdPASS) {} }
-  if (gAudioTaskHandle)    xTaskNotifyGive(gAudioTaskHandle);
+  // audioTask läuft kontinuierlich von selbst — kein Notify nötig.
   if (gMidPhotoTaskHandle) xTaskNotifyGive(gMidPhotoTaskHandle);
+  if (gEndPhotoTaskHandle) xTaskNotifyGive(gEndPhotoTaskHandle);
 
   for (;;) {
     // Maintain strict cadence per window.
     vTaskDelayUntil(&lastWake, periodTicks);
-    Serial.printf("Sampler task: Window end at %lu ms.\n", (unsigned long)millis());
+    LOGV("Sampler task: Window end at %lu ms.\n", (unsigned long)millis());
 
     // --- Prepare packet ---
     // static: Packet (~6 KB) liegt im BSS, nicht auf dem Task-Stack
@@ -424,10 +504,6 @@ void samplerTask(void* arg) {
     pkt = {};
     pkt.idx = mediaCounter;
     pkt.ts_ms = windowStartMs;
-
-    // --- Close IMU window ---
-    myIMU.stopFifo();
-    myIMU.findFifoBegin();
 
     // --- Fetch audio buffer for the just-finished window ---
     uint8_t* pcmBuf = nullptr;
@@ -440,19 +516,23 @@ void samplerTask(void* arg) {
       pkt.pcmSize = 0;
     }
 
-    // --- Read IMU FIFO ---
-    int16_t rawCount = myIMU.getNumberOfFifoDataSets();
-    size_t count = (rawCount > 0) ? static_cast<size_t>(rawCount) : 0;
-    if (count > MAX_FIFO_SETS) count = MAX_FIFO_SETS;
-    for (size_t i = 0; i < count; ++i) {
-      xyzFloat acc, gyr;
-      myIMU.getGValuesFromFifo(&acc);
-      myIMU.getGyrValuesFromFifo(&gyr);
-      pkt.imu[i] = {acc.x, acc.y, acc.z, gyr.x, gyr.y, gyr.z};
+    // --- Read IMU FIFO (alle bis jetzt gesammelten Samples) ---
+    // FIFO läuft kontinuierlich. Wir lesen *genau* die vorhandenen Samples
+    // und rufen KEIN resetFifo/stopFifo — Samples, die während des I2C-Reads
+    // entstehen, bleiben für das nächste Paket im FIFO. So bilden aufein-
+    // anderfolgende Pakete den vollen Sample-Stream ohne Lücken ab.
+    {
+      int16_t rawCount = myIMU.getNumberOfFifoDataSets();
+      size_t count = (rawCount > 0) ? static_cast<size_t>(rawCount) : 0;
+      if (count > MAX_FIFO_SETS) count = MAX_FIFO_SETS;
+      for (size_t i = 0; i < count; ++i) {
+        xyzFloat acc, gyr;
+        myIMU.getGValuesFromFifo(&acc);
+        myIMU.getGyrValuesFromFifo(&gyr);
+        pkt.imu[i] = {acc.x, acc.y, acc.z, gyr.x, gyr.y, gyr.z};
+      }
+      pkt.imuCount = count;
     }
-    pkt.imuCount = count;
-    myIMU.resetFifo();
-    myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
 
     pkt.mag = {0,0,0};
     if (hasMag) {
@@ -480,24 +560,32 @@ void samplerTask(void* arg) {
       pkt.midImgBuf = mp.buf;
       pkt.midImgLen = mp.len;
     }
+    // End-of-window Foto abholen — von endPhotoTask im Hintergrund gecaptured
+    {
+      EndPhoto ep = {};
+      xQueueReceive(gEndPhotoQueue, &ep, 0);  // nicht-blockierend
+      pkt.endImgBuf = ep.buf;
+      pkt.endImgLen = ep.len;
+    }
 
     // --- Start next window ---
-    myIMU.resetFifo();
-    myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
-    windowStartMs = millis();
-    // tofTask läuft kontinuierlich — altes Material verwerfen
-    { TOFSample tmp; while (xQueueReceive(gTofQueue, &tmp, 0) == pdPASS) {} }
-    if (gAudioTaskHandle)    xTaskNotifyGive(gAudioTaskHandle);
+    // FIFO läuft durchgehend weiter — kein reset/start hier.
+    // windowStartMs auf strikte 1000-ms-Cadence fortschreiben, damit Pakete
+    // exakt aneinander anschließen (kein Jitter durch Verarbeitungszeit).
+    windowStartMs += PACKET_INTERVAL_MS;
     if (gMidPhotoTaskHandle) xTaskNotifyGive(gMidPhotoTaskHandle);
-    lastWake = xTaskGetTickCount();
+    if (gEndPhotoTaskHandle) xTaskNotifyGive(gEndPhotoTaskHandle);
+    // lastWake wird von vTaskDelayUntil automatisch fortgeführt — nicht
+    // manuell überschreiben, sonst driftet die Cadence.
 
     // Enqueue for writer
     if (xQueueSend(gPacketQueue, &pkt, pdMS_TO_TICKS(50)) != pdPASS) {
       if (pkt.pcmBuf)    free(pkt.pcmBuf);
       if (pkt.midImgBuf) free(pkt.midImgBuf);
+      if (pkt.endImgBuf) free(pkt.endImgBuf);
       Serial.println("WARN packet queue full — dropping packet");
     } else {
-      Serial.println("Sampler task: Packet sent to writer.");
+      LOGV_LN("Sampler task: Packet sent to writer.");
       mediaCounter++;
     }
   }
@@ -544,10 +632,24 @@ void buildJson(const Packet& pkt, JsonDocument& doc) {
 void writerTask(void* arg) {
   // static: Packet (~6 KB) liegt im BSS, nicht auf dem Task-Stack
   static Packet pkt;
+  char bucketDir[32];
+  uint32_t currentBucket = UINT32_MAX;  // forces mkdir on first packet
   for (;;) {
     pkt = {};
     if (xQueueReceive(gPacketQueue, &pkt, portMAX_DELAY) != pdPASS) {
       continue;
+    }
+
+    const uint32_t writeStart = millis();
+
+    // Bucket-Subdir pro PACKETS_PER_BUCKET Pakete anlegen — hält FAT-Dir klein.
+    const uint32_t bucket = pkt.idx / PACKETS_PER_BUCKET;
+    if (bucket != currentBucket) {
+      snprintf(bucketDir, sizeof(bucketDir), "%s/%03lu", dataDir, (unsigned long)bucket);
+      if (!SD.exists(bucketDir) && !SD.mkdir(bucketDir)) {
+        Serial.printf("ERR failed to create bucket %s\n", bucketDir);
+      }
+      currentBucket = bucket;
     }
 
     // 1) Build JSON from packet
@@ -555,25 +657,25 @@ void writerTask(void* arg) {
     buildJson(pkt, doc);
 
     // Kurze Statuszeile — kein Full-JSON-Dump (würde bei 115200 Baud >1 s blockieren)
-    Serial.printf("PKT %lu  ts=%lu  imu=%u  tof=%u  audio=%u\n",
-                  pkt.idx, pkt.ts_ms,
-                  (unsigned)pkt.imuCount, (unsigned)pkt.tofCount,
-                  (unsigned)pkt.pcmSize);
+    LOGV("PKT %lu  ts=%lu  imu=%u  tof=%u  audio=%u\n",
+         pkt.idx, pkt.ts_ms,
+         (unsigned)pkt.imuCount, (unsigned)pkt.tofCount,
+         (unsigned)pkt.pcmSize);
 
     // 2) Save JSON
-    char path[48];
-    snprintf(path, sizeof(path), "%s/pkt_%lu.json", dataDir, pkt.idx);
+    char path[64];
+    snprintf(path, sizeof(path), "%s/pkt_%lu.json", bucketDir, pkt.idx);
     if (File f = SD.open(path, FILE_WRITE)) {
       serializeJson(doc, f);
       f.close();
-      Serial.printf("OK  saved %s\n", path);
+      LOGV("OK  saved %s\n", path);
     } else {
       Serial.printf("ERR failed to open %s\n", path);
     }
 
     // 3) WAV direkt schreiben — Header inline, kein 32-KB-Zwischenbuffer
     if (pkt.pcmBuf && pkt.pcmSize > 0) {
-      snprintf(path, sizeof(path), "%s/rec_%lu_%lu.wav", dataDir, pkt.idx, pkt.ts_ms);
+      snprintf(path, sizeof(path), "%s/rec_%lu_%lu.wav", bucketDir, pkt.idx, pkt.ts_ms);
       if (File wf = SD.open(path, FILE_WRITE)) {
         // 44-Byte WAV-Header direkt aufbauen und schreiben
         uint8_t hdr[WAV_HEADER_SIZE];
@@ -588,7 +690,9 @@ void writerTask(void* arg) {
         const uint32_t fmt_size = 16;    memcpy(hdr + 16, &fmt_size,  4);
         const uint16_t pcm_fmt  = 1;     memcpy(hdr + 20, &pcm_fmt,   2);
         const uint16_t channels = AUDIO_CHAN; memcpy(hdr + 22, &channels, 2);
-        memcpy(hdr + 24, &AUDIO_FS,         4);
+        // AUDIO_FS ist uint16_t — für das 4-Byte WAV-Sample-Rate-Feld auf uint32_t promoten,
+        // sonst liest memcpy 2 Bytes OOB und das Feld enthält Müll (→ Browser lehnt WAV ab).
+        const uint32_t sample_rate = AUDIO_FS; memcpy(hdr + 24, &sample_rate, 4);
         memcpy(hdr + 28, &byte_rate,        4);
         memcpy(hdr + 32, &block_align,      2);
         const uint16_t bits = AUDIO_BITS; memcpy(hdr + 34, &bits,      2);
@@ -597,42 +701,46 @@ void writerTask(void* arg) {
         wf.write(hdr, WAV_HEADER_SIZE);
         wf.write(pkt.pcmBuf, pkt.pcmSize);
         wf.close();
-        Serial.printf("OK  saved %s (%u bytes)\n", path, (unsigned)(WAV_HEADER_SIZE + data_size));
+        LOGV("OK  saved %s (%u bytes)\n", path, (unsigned)(WAV_HEADER_SIZE + data_size));
       } else {
         Serial.printf("ERR failed to open %s\n", path);
       }
       free(pkt.pcmBuf);
     }
 
-    // 4) Capture and save photo — überspringen wenn Queue schon voll läuft
-    if (uxQueueMessagesWaiting(gPacketQueue) <= 2) {
-      camera_fb_t *fb = esp_camera_fb_get();
-      if (fb) {
-        snprintf(path, sizeof(path), "%s/img_%lu_%lu.jpg", dataDir, pkt.idx, pkt.ts_ms);
-        if (File img = SD.open(path, FILE_WRITE)) {
-          img.write(fb->buf, fb->len);
-          img.close();
-          Serial.printf("OK  saved %s (%u bytes)\n", path, fb->len);
-        } else {
-          Serial.printf("ERR failed to open %s\n", path);
-        }
-        esp_camera_fb_return(fb);
+    // 4) End-of-window Foto speichern — wurde vom endPhotoTask im Hintergrund
+    //    aufgenommen und als RAM-Buffer übergeben. Kein esp_camera_fb_get im
+    //    Writer-Hotpath mehr — entkoppelt Kamera-Latenz vom SD-Write-Pfad.
+    if (pkt.endImgBuf && pkt.endImgLen > 0) {
+      snprintf(path, sizeof(path), "%s/img_%lu_%lu.jpg", bucketDir, pkt.idx, pkt.ts_ms);
+      if (File img = SD.open(path, FILE_WRITE)) {
+        img.write(pkt.endImgBuf, pkt.endImgLen);
+        img.close();
+        LOGV("OK  saved %s (%u bytes)\n", path, (unsigned)pkt.endImgLen);
+      } else {
+        Serial.printf("ERR failed to open %s\n", path);
       }
-    } else {
-      Serial.printf("SKIP photo pkt_%lu (queue backed up)\n", pkt.idx);
+      free(pkt.endImgBuf);
     }
 
     // 5) Mid-window Foto speichern (bereits in samplerTask gecaptured)
     if (pkt.midImgBuf && pkt.midImgLen > 0) {
-      snprintf(path, sizeof(path), "%s/mid_%lu_%lu.jpg", dataDir, pkt.idx, pkt.ts_ms);
+      snprintf(path, sizeof(path), "%s/mid_%lu_%lu.jpg", bucketDir, pkt.idx, pkt.ts_ms);
       if (File mf = SD.open(path, FILE_WRITE)) {
         mf.write(pkt.midImgBuf, pkt.midImgLen);
         mf.close();
-        Serial.printf("OK  saved %s (%u bytes)\n", path, (unsigned)pkt.midImgLen);
+        LOGV("OK  saved %s (%u bytes)\n", path, (unsigned)pkt.midImgLen);
       } else {
         Serial.printf("ERR failed to open %s\n", path);
       }
       free(pkt.midImgBuf);
+    }
+
+    // Writer-Durchsatz-Check: erst ab ~1 s wird es für den 1-Hz-Paketstrom
+    // wirklich knapp. 950 ms meldet nur noch die relevanten Ausreißer.
+    const uint32_t writeMs = millis() - writeStart;
+    if (writeMs > 950) {
+      Serial.printf("WARN writer slow: pkt %lu took %lu ms\n", pkt.idx, writeMs);
     }
   }
 }

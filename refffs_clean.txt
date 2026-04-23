@@ -1,0 +1,2167 @@
+@inproceedings{lld,
+author = {Matthies, Denys J.C. and Elvitigala, Don Samitha and Fu, Annis and Yin, Deborah and Nanayakkara, Suranga},
+title = {mobiLLD: Exploring the Detection of Leg Length Discrepancy and Altering Gait with Mobile Smart Insoles},
+year = {2021},
+isbn = {9781450387927},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3453892.3453896}        ,
+doi = {10.1145/3453892.3453896},
+abstract = { Leg length discrepancy (LLD) is common and typically burdens the spine and hip causing a variety of health issues including back pain and headache. Common orthopaedic solutions target correcting gait, typically by shoe lifts. Moreover, functional LLD can be temporary as it occurs after an injury or even after sitting in a twisted posture. Often, it is only noticeable when pain has arisen. We present a mobile smart insole system designed to detect LLD by measuring gait parameters, such as Stance Time, Ground Reaction Force, and Center of Pressure. Furthermore, our prototype is capable of augmenting vibrotactile feedback under the foot. Our method has shown to impact gait, in particular Stance Time, which may be used to compensate gait asymmetries caused by LLD. To evidence our findings, we rely on a similar methodology from related lab studies and induced a mild LLD by a 10mm offset insole among 16 participants.},
+booktitle = {The 14th PErvasive Technologies Related to Assistive Environments Conference},
+pages = {37–47},
+numpages = {11},
+series = {PETRA 2021}
+}
+
+
+@inproceedings{10.1145/3586183.3606808,
+author = {Ushiyama, Keigo and Lopes, Pedro},
+title = {FeetThrough: Electrotactile Foot Interface that Preserves Real-World Sensations},
+year = {2023},
+isbn = {9798400701320},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3586183.3606808},
+doi = {10.1145/3586183.3606808},
+abstract = {Haptic interfaces have been extended to the feet to enhance foot-based activities, such as guidance while walking or stepping on virtual textures. Most feet haptics use mechanical actuators, namely vibration motors. However, we argue that vibration motors are not the ideal actuators for all feet haptics. Instead, we demonstrate that electrotactile stimulation provides qualities that make it a powerful feet-haptic interface: (1) Users wearing electrotactile can not only feel the stimulation but can also better feel the terrain under their feet—this is critical as our feet are also responsible for the balance on uneven terrains and stairs—electrotactile achieves this improved “feel-through” effect because it is thinner than vibrotactile actuators, at 0.1 mm in our prototype; (2) While a single vibrotactile actuator will also vibrate surrounding skin areas, we found improved two-point discrimination thresholds for electrotactile; (3) Electrotactile can be applied directly to soles, insoles or socks, enabling new applications such as barefoot interactive experiences or without requiring users to have custom-shoes with built-in vibration motors. Finally, we demonstrate applications in which electrotactile feet interfaces allow users to feel not only virtual information but also the real terrain under their shoes, such as a VR experience where users walk on ground props and a tactile navigation system that augments the ground with virtual tactile paving to assist pedestrians in low-vision situations.},
+booktitle = {Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology},
+articleno = {10},
+numpages = {11},
+keywords = {AR, Haptics, VR, electrotactile, feel-through, foot},
+location = {San Francisco, CA, USA},
+series = {UIST '23}
+}
+
+@inproceedings{10.1145/2702123.2702253,
+author = {Schmidt, Dominik and Kovacs, Rob and Mehta, Vikram and Umapathi, Udayan and K\"{o}hler, Sven and Cheng, Lung-Pan and Baudisch, Patrick},
+title = {Level-Ups: Motorized Stilts that Simulate Stair Steps in Virtual Reality},
+year = {2015},
+isbn = {9781450331456},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2702123.2702253},
+doi = {10.1145/2702123.2702253},
+abstract = {We present "Level-Ups", computer-controlled stilts that allow virtual reality users to experience walking up and down steps. Each Level-Up unit is a self-contained device worn like a boot. Its main functional element is a vertical actuation mechanism mounted to the bottom of the boot that extends vertically. Unlike traditional solutions that are integrated with locomotion devices, Level-Ups allow users to walk around freely ("real-walking"). We present Level-Ups in a demo environment based on a head-mounted display, optical motion capture, and integrated with two different game engines. In a user study, participants rated the realism of stepping onto objects 6.0 out of 7.0 when wearing Level-Ups compared to 3.5 without.},
+booktitle = {Proceedings of the 33rd Annual ACM Conference on Human Factors in Computing Systems},
+pages = {2157–2160},
+numpages = {4},
+keywords = {virtual reality, real-walking, head-mounted display},
+location = {Seoul, Republic of Korea},
+series = {CHI '15}
+}
+
+@ARTICLE{9714041,
+  author={Tsao, Chih-An and Wu, Tzu-Chun and Tsai, Hsin-Ruey and Wei, Tzu-Yun and Liao, Fang-Ying and Chapman, Sean and Chen, Bing-Yu},
+  journal={IEEE Transactions on Visualization and Computer Graphics}, 
+  title={FrictShoes: Providing Multilevel Nonuniform Friction Feedback on Shoes in VR}, 
+  year={2022},
+  volume={28},
+  number={5},
+  pages={2026-2036},
+  keywords={Friction;Foot;Wheels;Force;Haptic interfaces;Legged locomotion;Force feedback;Haptic feedback;friction force;force feedback;on feet;virtual reality;wearable device},
+  doi={10.1109/TVCG.2022.3150492}}
+
+@inproceedings{10.1145/2702123.2702190,
+author = {Pfeiffer, Max and D\"{u}nte, Tim and Schneegass, Stefan and Alt, Florian and Rohs, Michael},
+title = {Cruise Control for Pedestrians: Controlling Walking Direction using Electrical Muscle Stimulation},
+year = {2015},
+isbn = {9781450331456},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2702123.2702190},
+doi = {10.1145/2702123.2702190},
+abstract = {Pedestrian navigation systems require users to perceive, interpret, and react to navigation information. This can tax cognition as navigation information competes with information from the real world. We propose actuated navigation, a new kind of pedestrian navigation in which the user does not need to attend to the navigation task at all. An actuation signal is directly sent to the human motor system to influence walking direction. To achieve this goal we stimulate the sartorius muscle using electrical muscle stimulation. The rotation occurs during the swing phase of the leg and can easily be counteracted. The user therefore stays in control. We discuss the properties of actuated navigation and present a lab study on identifying basic parameters of the technique as well as an outdoor study in a park. The results show that our approach changes a user's walking direction by about 16°/m on average and that the system can successfully steer users in a park with crowded areas, distractions, obstacles, and uneven ground.},
+booktitle = {Proceedings of the 33rd Annual ACM Conference on Human Factors in Computing Systems},
+pages = {2505–2514},
+numpages = {10},
+keywords = {actuated navigation, electrical muscle stimulation, haptic feedback, pedestrian navigation, wearable devices},
+location = {Seoul, Republic of Korea},
+series = {CHI '15}
+}
+
+@inproceedings{10.1145/3332165.3347875,
+author = {Yang, Jackie (Junrui) and Holz, Christian and Ofek, Eyal and Wilson, Andrew D.},
+title = {DreamWalker: Substituting Real-World Walking Experiences with a Virtual Reality},
+year = {2019},
+isbn = {9781450368162},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3332165.3347875},
+doi = {10.1145/3332165.3347875},
+abstract = {We explore a future in which people spend considerably more time in virtual reality, even during moments when they transition between locations in the real world. In this paper, we present DreamWalker, a VR system that enables such real-world walking while users explore and stay fully immersed inside large virtual environments in a headset. Provided with a real-world destination, DreamWalker finds a similar path in a pre-authored VR environment and guides the user while real-walking the virtual world. To keep the user from colliding with objects and people in the real-world, DreamWalker's tracking system fuses GPS locations, inside-out tracking, and RGBD frames to 1) continuously and accurately position the user in the real world, 2) sense walkable paths and obstacles in real time, and 3) represent paths through a dynamically changing scene in VR to redirect the user towards the chosen destination. We demonstrate DreamWalker's versatility by enabling users to walk three paths across the large Microsoft campus while enjoying pre-authored VR worlds, supplemented with a variety of obstacle avoidance and redirection techniques. In our evaluation, 8 participants walked across campus along a 15-minute route, experiencing a lively virtual Manhattan that was full of animated cars, people, and other objects.},
+booktitle = {Proceedings of the 32nd Annual ACM Symposium on User Interface Software and Technology},
+pages = {1093–1107},
+numpages = {15},
+keywords = {gps., inside-out, real-walking, redirection, tracking, vr},
+location = {New Orleans, LA, USA},
+series = {UIST '19}
+}
+
+@inproceedings{10.1145/3490149.3501333,
+author = {Wang, Li-Yang and Han, Ping-Hsuan and Chan, Liwei},
+title = {Push-Ups: Enhancing Kinesthetic Experience with Shape-Forming Devices on the Feet Soles},
+year = {2022},
+isbn = {9781450391474},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3490149.3501333},
+doi = {10.1145/3490149.3501333},
+abstract = {This paper explores directional kinesthetic force feedback on feet for enhancing foot-related experiences in virtual reality. We present Push-Ups, a pair of pneumatic shoes capable of outputting motions to users’ feet soles via the shape-forming shoe bases, to enhance users’ kinesthetic experience in a virtual ski. Each Push-Ups shoe comprises four pneumatic muscles in the base, allowing to present ten shape patterns and thus ten different motion outputs. Our first study validated the effectiveness of the motion output through a recognition study. The second study evaluated the user experience of the system on a virtual ski experience, which demonstrated that users perceived higher enjoyment and realism with the kinesthetic force feedback provided by Push-Ups.},
+booktitle = {Proceedings of the Sixteenth International Conference on Tangible, Embedded, and Embodied Interaction},
+articleno = {27},
+numpages = {8},
+keywords = {Shape-forming interface, haptic shoes, kinesthetic force feedback, virtual reality},
+location = {Daejeon, Republic of Korea},
+series = {TEI '22}
+}
+
+@inproceedings{10.1145/1866029.1866061,
+author = {Takeuchi, Yuichiro},
+title = {Gilded gait: reshaping the urban experience with augmented footsteps},
+year = {2010},
+isbn = {9781450302715},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1866029.1866061},
+doi = {10.1145/1866029.1866061},
+abstract = {In this paper we describe Gilded Gait, a system that changes the perceived physical texture of the ground, as felt through the soles of users' feet. Ground texture, in spite of its potential as an effective channel of peripheral information display, has so far been paid little attention in HCI research. The system is designed as a pair of insoles with embedded actuators, and utilizes vibrotactile feedback to simulate the perceptions of a range of different ground textures. The discreet, low-key nature of the interface makes it particularly suited for outdoor use, and its capacity to alter how people experience the built environment may open new possibilities in urban design.},
+booktitle = {Proceedings of the 23nd Annual ACM Symposium on User Interface Software and Technology},
+pages = {185–188},
+numpages = {4},
+keywords = {augmented reality, ground texture, haptic interface, urban navigation, vibrotactile feedback},
+location = {New York, New York, USA},
+series = {UIST '10}
+}
+
+
+
+
+
+
+
+@article{doi:10.1152/jn.1995.73.2.896,
+author = {Inglis, J. T. and Shupert, C. L. and Hlavacka, F. and Horak, F. B.},
+title = {Effect of galvanic vestibular stimulation on human postural responses during support surface translations},
+journal = {Journal of Neurophysiology},
+volume = {73},
+number = {2},
+pages = {896-901},
+year = {1995},
+doi = {10.1152/jn.1995.73.2.896},
+    note ={PMID: 7760147},
+
+URL = { 
+    
+        https://doi.org/10.1152/jn.1995.73.2.896
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1152/jn.1995.73.2.896
+    
+    
+
+}
+,
+    abstract = { 1. We investigated the role of the vestibular system in postural control by combining galvanic vestibular stimulation (0.2-0.5 mA) with platform translations in standing subjects. Vestibular stimulation delivered 500 ms before and continuously during the platform translation produced little change in the earliest center of pressure (COP) and center of mass (COM) movements in response to platform translations, but resulted in large changes during the execution of the postural movement and in the final equilibrium position. 2. Vestibular stimulation produced anterior or posterior shifts in the position of COP and COM, depending on the polarity of the galvanic current. These shifts were larger during platform translations than during quiet stance. The peak of these shifts in COP and COM occurred at 1.5-2.5 s after the onset of platform translation, and increased in magnitude with increasing platform velocity. The final equilibrium positions of COP and COM were also shifted, but these shifts were smaller and not dependent on platform velocity. 3. These results imply that a tonic step of galvanic current to the vestibular system can change the final equilibrium position for an automatic postural response. Furthermore, these results indicate that the vestibular system may play a larger role in interpreting sensory reafference during postural movements, and especially during fast postural movements, than in controlling quiet stance. Finally, these results indicate that the vestibular system does not play a critical role in triggering the earliest postural responses, but it may be critical in establishing an internal reference for verticality. }
+}
+
+@article{visell2011vibration,
+  title={Vibration influences haptic perception of surface compliance during walking},
+  author={Visell, Yon and Giordano, Bruno L and Millet, Guillaume and Cooperstock, Jeremy R},
+  journal={PLoS one},
+  volume={6},
+  number={3},
+  pages={e17697},
+  year={2011},
+  publisher={Public Library of Science San Francisco, USA}
+}
+
+
+
+@inproceedings{visell2010design,
+  title={Design of a vibrotactile display via a rigid surface},
+  author={Visell, Yon and Cooperstock, Jeremy R},
+  booktitle={2010 IEEE haptics symposium},
+  pages={133--140},
+  year={2010},
+  organization={IEEE}
+}
+
+@inproceedings{peon2013reaction,
+  title={Reaction times to constraint violation in haptics: comparing vibration, visual and audio stimuli},
+  author={Peon, Adrian Ramos and Prattichizzo, Domenico},
+  booktitle={2013 world haptics conference (WHC)},
+  pages={657--661},
+  year={2013},
+  organization={IEEE}
+}
+
+@article{NURSE2005496,
+title = {Changing the texture of footwear can alter gait patterns},
+journal = {Journal of Electromyography and Kinesiology},
+volume = {15},
+number = {5},
+pages = {496-506},
+year = {2005},
+issn = {1050-6411},
+doi = {https://doi.org/10.1016/j.jelekin.2004.12.003} ,
+url = {https://www.sciencedirect.com/science/article/pii/S1050641105000143},
+author = {Matthew A. Nurse and Manuel Hulliger and James M. Wakeling and Benno M. Nigg and Darren J. Stefanyshyn},
+keywords = {Afferent, Sensory feedback, Biomechanics, Shoe inserts, Muscle, EMG, Wavelet, Kinematics, Footwear},
+abstract = {The foot provides an important source of afferent feedback for balance and locomotion. Sensory feedback from the feet can be altered by standing or walking on different surfaces. The purpose was to determine the effects of textured footwear on lower extremity muscle activity, limb kinematics, and joint kinetics while walking. Three-dimensional kinematics and kinetics, as well as muscle EMG, were collected as subjects walked with a smooth and textured shoe insert. Muscle activity was analyzed using a wavelet technique. The textured shoe insert caused a significant reduction in both soleus and tibialis anterior intensity during periods when these muscles are most active. Furthermore, the changes in muscle activity were only seen in the low frequency content of the EMG signal. The foot was significantly more plantar flexed at heel strike with the textured inserts. Small changes were also seen in vertical ground reaction forces and joint moments. It was assumed that the changes in gait patterns were due to a change in sensory feedback caused by the textured shoe insert. The possibilities of altered sensory feedback with footwear are discussed. Sensory feedback from the feet may affect specific motor unit pools during different activities. Changing the texture, without changing the geometry, of a shoe insert can alter muscle activity during walking. This may be useful in the prescription of footwear interventions and suggests that footwear may have sensory as well as mechanical effects.}
+}
+
+@ARTICLE{9529196,
+  author={Shull, Peter B. and Xia, Haisheng and Charlton, Jesse M. and Hunt, Michael A.},
+  journal={IEEE Transactions on Neural Systems and Rehabilitation Engineering}, 
+  title={Wearable Real-Time Haptic Biofeedback Foot Progression Angle Gait Modification to Assess Short-Term Retention and Cognitive Demand}, 
+  year={2021},
+  volume={29},
+  number={},
+  pages={1858-1865},
+  keywords={Haptic interfaces;Legged locomotion;Training;Biological control systems;Task analysis;Footwear;Vibrations;Gait training;toe-in gait;toe-out gait},
+  doi={10.1109/TNSRE.2021.3110202}}
+
+
+@article{XIA2020109789,
+title = {Portable, automated foot progression angle gait modification via a proof-of-concept haptic feedback-sensorized shoe},
+journal = {Journal of Biomechanics},
+volume = {107},
+pages = {109789},
+year = {2020},
+issn = {0021-9290},
+doi = {https://doi.org/10.1016/j.jbiomech.2020.109789}   ,
+url = {https://www.sciencedirect.com/science/article/pii/S0021929020302098},
+author = {Haisheng Xia and Jesse M. Charlton and Peter B. Shull and Michael A. Hunt},
+keywords = {Gait modification, Knee osteoarthritis, Wearable sensing and feedback},
+abstract = {Modifying the foot progression angle (FPA) is a non-pharmacological, non-surgical treatment option for knee osteoarthritis, however current widespread adoption has been limited by the requirement of laboratory-based motion capture systems. We present the first customized haptic feedback-sensorized shoe for estimating and modifying FPA during walking gait, which includes an electronic inertial and magnetometer module in the sole for estimating FPA, and two vibration motors attached to the medial and lateral shoe lining for providing vibrotactile feedback. Feasibility testing was performed by comparing FPA performance while wearing the haptic feedback-sensorized shoe with the training targets. Participants performed five walking trials with five randomly-presented FPA targets (10° toe-in, 0°, 10° toe-out, 20° toe-out, and 30° toe-out) of 2min each on a treadmill. Overall average FPA performance error across all conditions was 0.24.1°, and the overall mean absolute FPA performance error across all conditions was 3.2.6°. Reducing the size of the no-feedback window resulted in less performance error during walking. This study demonstrates that a novel haptic feedback-sensorized shoe can be used to effectively train FPA modifications. The haptic feedback-sensorized shoe could potentially be used for FPA gait modification outside of specialized camera-based motion capture laboratories as a conservative treatment for knee osteoarthritis or other related clinical applications requiring FPA assessment and modification in daily life.}
+}
+
+@article{10.1371/journal.pone.0017697,  
+    doi = {10.1371/journal.pone.0017697 },
+    author = {Visell, Yon AND Giordano, Bruno L. AND Millet, Guillaume AND Cooperstock, Jeremy R.},
+    journal = {PLOS ONE},
+    publisher = {Public Library of Science},
+    title = {Vibration Influences Haptic Perception of Surface Compliance During Walking},
+    year = {2011},
+    month = {03},
+    volume = {6},
+    url = {https://doi.org/10.1371/journal.pone.0017697   } ,
+    pages = {1-11},
+    abstract = {Background The haptic perception of ground compliance is used for stable regulation of dynamic posture and the control of locomotion in diverse natural environments. Although rarely investigated in relation to walking, vibrotactile sensory channels are known to be active in the discrimination of material properties of objects and surfaces through touch. This study investigated how the perception of ground surface compliance is altered by plantar vibration feedback.   Methodology/Principal Findings Subjects walked in shoes over a rigid floor plate that provided plantar vibration feedback, and responded indicating how compliant it felt, either in subjective magnitude or via pairwise comparisons. In one experiment, the compliance of the floor plate was also varied. Results showed that perceived compliance of the plate increased monotonically with vibration feedback intensity, and depended to a lesser extent on the temporal or frequency distribution of the feedback. When both plate stiffness (inverse compliance) and vibration amplitude were manipulated, the effect persisted, with both factors contributing to compliance perception. A significant influence of vibration was observed even for amplitudes close to psychophysical detection thresholds.   Conclusions/Significance These findings reveal that vibrotactile sensory channels are highly salient to the perception of surface compliance, and suggest that correlations between vibrotactile sensory information and motor activity may be of broader significance for the control of human locomotion than has been previously acknowledged.},
+    number = {3},
+
+}
+
+@INPROCEEDINGS{5444664,
+  author={Visell, Yon and Cooperstock, Jeremy R.},
+  booktitle={2010 IEEE Haptics Symposium}, 
+  title={Design of a vibrotactile display via a rigid surface}, 
+  year={2010},
+  volume={},
+  number={},
+  pages={133-140},
+  keywords={Displays;Frequency;Haptic interfaces;Force measurement;Foot;Humans;Rendering (computer graphics);Actuators;Biological system modeling;Vehicle dynamics;Vibrotactile display design;Vibrotactile rendering;Foot interfaces},
+  doi={10.1109/HAPTIC.2010.5444664}}
+
+
+@article{elvitigala2022ticklefoot,
+  title={TickleFoot: Design, Development and Evaluation of a Novel Foot-Tickling Mechanism That Can Evoke Laughter},
+  author={Elvitigala, Don Samitha and Boldu, Roger and Nanayakkara, Suranga and Matthies, Denys JC},
+  journal={ACM Transactions on Computer-Human Interaction},
+  volume={29},
+  number={3},
+  pages={1--23},
+  year={2022},
+  publisher={ACM New York, NY}
+}
+
+@inproceedings{gabrecht2025paves,
+  author    = {Gabrecht, T. Marco and Huang, C. and Matthies, Denys J.C. and Jetter, Hans-Christian},
+  title     = {{PAVES: Pneumatic And Vibrotactile Enhanced Shoes for Terrain Simulation in Virtual Environments on a Treadmill}},
+  booktitle = {Proceedings of the PErvasive Technologies Related to Assistive Environments (PETRA '25)},
+  year      = {2025},
+  publisher = {ACM},
+  doi       = {10.1145/3733155.3733202},
+  url       = {https://doi.org/10.1145/3733155.3733202}
+}
+@inproceedings{chandak2024haptic,
+  author    = {Chandak,Parth},
+  title     = {The Evolution of Haptic Feedback Systems and the Impact of User Experience: A Literature Review},
+  booktitle = {Proceedings of the International Journal of Innovative Research in Modern Physics and Sciences (IJIRMPS)},
+  year      = {2024},
+  month     = {June},
+  volume    = {12},
+  number    = {3},
+  pages     = {20--27},
+  url       = {https://www.ijirmps.org/papers/2024/6/231735.pdf},
+  publisher = {IJIRMPS},
+  note      = {ISSN: 2348-7305}
+}
+@misc{fastestsense,
+	title = {What Is the Fastest Sense in Humans?},
+	url = {http://www.thehealthboard.com/what-is-the-fastest-sense-in-humans.htm},
+	abstract = {Brief and Straightforward Guide: What Is the Fastest Sense in Humans?},
+	titleaddon = {The Health Board},
+    author = {wiseGEEK},
+    year = 2022,
+    organization = {Radio Lab},
+	urldate = {2022-07-25},
+	langid = {american},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\DJ3BCKWR\\what-is-the-fastest-sense-in-humans.html:text/html},
+}
+
+@book{el2011haptics,
+  title={Haptics technologies: Bringing touch to multimedia},
+  author={El Saddik, Abdulmotaleb and Orozco, Mauricio and Eid, Mohamad and Cha, Jongeun},
+  year={2011},
+  publisher={Springer}
+}
+
+
+@inproceedings{van2006application,
+  title={Application of tactile displays in sports: where to, how and when to move},
+  author={Van Erp, Jan BF and Saturday, Ian and Jansen, Chris},
+  booktitle={Proc. Eurohaptics},
+  pages={105--109},
+  year={2006},
+  organization={Citeseer}
+}
+
+
+@misc{luo_zhi-fang_espacenet_2009,
+	title = {Espacenet – Suchergebnisse},
+	url = {https://worldwide.espacenet.com/patent/search/family/044994912/publication/TW201038218A?q=TW201038218A},
+	titleaddon = {{TW}201038218A Structure of digital air cushion},
+	author = {{LUO} {ZHI}-{FANG}},
+	urldate = {2022-07-25},
+	date = {2009-04-24},
+	year = {2009}
+}
+
+@article{imbach2020validity,
+  title={Validity of the Stryd power meter in measuring running parameters at submaximal speeds},
+  author={Imbach, Frank and Candau, Robin and Chailan, Romain and Perrey, Stephane},
+  journal={Sports},
+  volume={8},
+  number={7},
+  pages={103},
+  year={2020},
+  publisher={MDPI}
+}
+@article{reddy2016shoe,
+  title={An in-shoe temperature measurement system for studying diabetic foot ulceration etiology: preliminary results with healthy participants},
+  author={Reddy, Prabhav Nadipi and Cooper, Glen and Weightman, Andrew and Hodson-Tole, Emma and Reeves, Neil},
+  journal={Procedia cirp},
+  volume={49},
+  pages={153--156},
+  year={2016},
+  publisher={Elsevier}
+}
+@article{carse2013affordable,
+  title={Affordable clinical gait analysis: An assessment of the marker tracking accuracy of a new low-cost optical 3D motion analysis system},
+  author={Carse, Bruce and Meadows, Barry and Bowers, Roy and Rowe, Philip},
+  journal={Physiotherapy},
+  volume={99},
+  number={4},
+  pages={347--351},
+  year={2013},
+  publisher={Elsevier}
+}
+@inproceedings{muthukumarana2020touch,
+  title={Touch me gently: recreating the perception of touch using a shape-memory alloy matrix},
+  author={Muthukumarana, Sachith and Elvitigala, Don Samitha and Forero Cortes, Juan Pablo and Matthies, Denys JC and Nanayakkara, Suranga},
+  booktitle={Proceedings of the 2020 CHI Conference on Human Factors in Computing Systems},
+  pages={1--12},
+  year={2020}
+}
+
+
+@article{vibDisplay,
+author = {Raj, Anil and Perry, James},
+year = {2000},
+month = {07},
+pages = {},
+title = {Vibrotactile Displays for Improving Spatial Awareness},
+volume = {44},
+journal = {Proceedings of the Human Factors and Ergonomics Society Annual Meeting},
+doi = {10.1177/154193120004400148}
+}
+
+@article{sensorarticle,
+author = {Bowser, Bradley and Fellin, Rebecca and Milner, Clare and Pohl, Michael and Davis, Irene},
+year = {2018},
+month = {07},
+pages = {1},
+title = {Reducing Impact Loading in Runners: A One-Year Follow-up},
+volume = {50},
+journal = {Medicine \& Science in Sports \& Exercise},
+doi = {10.1249/MSS.0000000000001710}
+}
+
+@misc{ESP32-S2,
+  author={Espressif Systems},
+  title={ESP32-S2 Family},
+  howpublished = "\url{https://espressif.com/sites/default/files/documentation/esp32-s2_datasheet_en.pdf}",
+  publisher={Espressif Systems},
+  year={2021}
+}
+
+@misc{ESP32-S2-mini,
+  author={Espressif Systems},
+  title={ESP32S2MINI1 \& ESP32S2MINI1},
+  howpublished = "\url{https://www.mouser.de/datasheet/2/891/esp32_s2_mini_1_esp32_s2_mini_1u_datasheet_en-1928084.pdf}",
+  publisher={Espressif Systems},
+  year={2021}
+}
+
+@misc{FreeRTOS,
+  author={Espressif Systems},
+  title={FreeRTOS},
+  howpublished = "\url{https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html}",
+  publisher={Espressif Systems},
+  year={2022}
+}
+
+@misc{MPU-6050,
+  author={InvenSense Inc},
+  title={MPU-6000 and MPU-6050 Product Specification},
+  howpublished = "\url{https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf}",
+  publisher={InvenSense Inc},
+  year={2021}
+}
+
+@misc{XGZP6847A,
+  author={CFSensor},
+  title={XGZP6847A Pressure Sensor M},
+  howpublished = "\url{https://www.micros.com.pl/mediaserver/CZ_XGZP6847a010kpg_0001.pdf}",
+  publisher={CFSensor},
+  year={2021}
+}
+
+@misc{HX710,
+  author={AVIA SEMICONDUCTOR},
+  title={HX710},
+  howpublished = "\url{https://www.electronicscomp.com/datasheet/hx710b-ic-datasheet.pdf}",
+  publisher={AVIA SEMICONDUCTOR},
+  year = {2022}
+}
+
+@inproceedings{ion2018metamaterial,
+  title={Metamaterial textures},
+  author={Ion, Alexandra and Kovacs, Robert and Schneider, Oliver S and Lopes, Pedro and Baudisch, Patrick},
+  booktitle={Proceedings of the 2018 CHI Conference on Human Factors in Computing Systems},
+  pages={1--12},
+  year={2018}
+}
+
+@misc{HX710Issue,
+  author = {Dreded},
+  title = {Can't Get Readings Faster than 450ms},
+  year = {2021},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/bogde/HX711/issues/214}}
+}
+
+@misc{NCV8187,
+  author={onsemi},
+  title={Voltage Regulator - Low Iq, Low Dropout, Power Good Output 1.2A NCV8187},
+  howpublished = "\url{https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf}",
+  publisher={Semiconductor Components Industries, LLC},
+  year={2021}
+}
+
+@inproceedings{elvitigala2021gymsoles++,
+  title={GymSoles++: Combining Google Glass with Smart Insoles to Improve Body Posture when Performing Squats},
+  author={Elvitigala, Don Samitha and Matthies, Denys JC and Weerasinghe, Chamod and Nanayakkara, Suranga},
+  booktitle={The 14th PErvasive Technologies Related to Assistive Environments Conference},
+  pages={48--54},
+  year={2021}
+}
+
+
+@misc{noauthor_ssm3k7002kfulf_nodate,
+	title = {{SSM}3K7002KFU,{LF} Toshiba {\textbar} Mouser},
+	url = {https://www.mouser.de/ProductDetail/757-SSM3K7002KFULF},
+	abstract = {{SSM}3K7002KFU,{LF} Toshiba {MOSFET} Small-signal {MOSFET} {ID}=0.4A {VDSS}=60V Datenblatt, Bestand und Preis.},
+    author = {Toshiba},
+    year = 2016,
+    organization = {Toshiba},
+	titleaddon = {Mouser Electronics},
+	urldate = {2022-08-30},
+	langid = {german},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\VEWHQ982\\SSM3K7002KFULF.html:text/html},
+}
+
+@misc{noauthor_esp32_2019,
+	title = {{ESP}32 Analog Input with Arduino {IDE} {\textbar} Random Nerd Tutorials},
+	url = {https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/},
+	abstract = {Learn how to read {ESP}32 Analog Inputs with Arduino {IDE} using {analogRead} function. Analog reading is useful to read values from potentiometers, analog sensors, etc},
+	urldate = {2022-08-30},
+	date = {2019-05-31},
+	langid = {american},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\IKDJTDU8\\esp32-adc-analog-read-arduino-ide.html:text/html},
+	year={2019}
+}
+
+@inproceedings{10.1145/2790044.2790051,
+author = {Meier, Anita and Matthies, Denys J. C. and Urban, Bodo and Wettach, Reto},
+title = {Exploring Vibrotactile Feedback on the Body and Foot for the Purpose of Pedestrian Navigation},
+year = {2015},
+isbn = {9781450334549},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2790044.2790051}  ,
+doi = {10.1145/2790044.2790051},
+abstract = {In this paper, we present an evaluation of vibrotactile onbody feedback for the purpose of pedestrian navigation. For this specific task, many researchers already provide different approaches such as vibrating belts, wristbands or shoes. Still, there are issues left that have to be considered, such as which body position is most suitable, what kind of vibration patterns are easy to interpret, and how applicable are vibrotactile feedback systems in real scenarios. To find answers, we reconstructed prototypes commonly found in literature and continued to further evaluate different foot-related designs. On the one hand, we learned that vibrotactile feedback at the foot reduces visual attention and thus also potentially reduces stress. However, on the other hand, we found that urban space can be very diverse, and ambiguous and therefore a vibrotactile system cannot completely replace common path finding systems for pedestrians. Rather, we envision such a system to be applied complementary as an assistive technology.},
+booktitle = {Proceedings of the 2nd iWOAR 2025},
+articleno = {11},
+numpages = {11},
+keywords = {intelligent user interfaces, tactile feedback, vibrotactile, pedestrian navigation, vibration, assistive technology},
+location = {Rostock, Germany},
+series = {iWOAR '15}
+}
+
+@article{de2020benefits,
+  title={Benefits of immersive collaborative learning in CAVE-based virtual reality},
+  author={de Back, Tycho T and Tinga, Angelica M and Nguyen, Phong and Louwerse, Max M},
+  journal={International Journal of Educational Technology in Higher Education},
+  volume={17},
+  number={1},
+  pages={1--18},
+  year={2020},
+  publisher={Springer}
+}
+
+
+@inproceedings{haescher2015capwalk,
+  title={Capwalk: A capacitive recognition of walking-based activities as a wearable assistive technology},
+  author={Haescher, Marian and Matthies, Denys JC and Bieber, Gerald and Urban, Bodo},
+  booktitle={Proceedings of the 8th ACM International Conference on PErvasive Technologies Related to Assistive Environments},
+  pages={1--8},
+  year={2015}
+}
+
+
+@inproceedings{matthies2013shoesolesense,
+  title={ShoeSoleSense: proof of concept for a wearable foot interface for virtual and real environments},
+  author={Matthies, Denys JC and M{\"u}ller, Franz and Anthes, Christoph and Kranzlm{\"u}ller, Dieter},
+  booktitle={Proceedings of the 19th ACM Symposium on Virtual Reality Software and Technology},
+  pages={93--96},
+  year={2013}
+}
+
+
+@article{gupta2019stackable,
+  title={Stackable smart footwear rack using infrared sensor},
+  author={Gupta, Rupesh and Sharma, Sarang and Gupta, Sheifali and Gupta, Deepali},
+  journal={Journal of Computational and Theoretical Nanoscience},
+  volume={16},
+  number={10},
+  pages={4232--4235},
+  year={2019},
+  publisher={American Scientific Publishers}
+}
+
+
+@phdthesis{beschorner2008development,
+  title={Development of a computational model for shoe-floor-contaminant friction},
+  author={Beschorner, Kurt Edward},
+  year={2008},
+  school={University of Pittsburgh}
+}
+
+
+@inproceedings{meier2015exploring,
+  title={Exploring vibrotactile feedback on the body and foot for the purpose of pedestrian navigation},
+  author={Meier, Anita and Matthies, Denys JC and Urban, Bodo and Wettach, Reto},
+  booktitle={Proceedings of the 2nd international Workshop on Sensor-based Activity Recognition and Interaction},
+  pages={1--11},
+  year={2015}
+}
+
+
+@misc{akku,
+  author={pknergy},
+  title={Li-Polymer Battery Technology Specification},
+  howpublished = "\url{https://ecksteinimg.de/Datasheet/ZB07002/LP503562\%201200mAH\%203.7V\%201S1P\%20A0.pdf}",
+  publisher={pknergy},
+  year={2022}
+}
+
+@INPROCEEDINGS{8465302,
+
+  author={Raihana, Kazi Kowshin and Hossain, Md. Sabbir and Dewan, Md. Tahsan and Zaman, Hasan U.},
+
+  booktitle={2018 2nd International Conference on Electronics, Materials Engineering \& Nano-Technology (IEMENTech)}, 
+
+  title={Auto-Moto Shoes: An Automated Walking Assistance for Arthritis Patients}, 
+
+  year={2018},
+
+  volume={},
+
+  number={},
+
+  pages={1-8},
+
+  doi={10.1109/IEMENTECH.2018.8465302}}
+
+
+
+@inproceedings{hierarchicalcalibration,
+	address = {ICST, Brussels, Belgium, Belgium},
+	series = {{IMMERSCOM} '09},
+	title = {Framework for {Hierarchical} {Calibration} of {Multi}-camera {Systems} for {Teleimmersion}},
+	isbn = {978-963-9799-39-4},
+	url = {http://dl.acm.org/citation.cfm?id=1594108.1594110},
+	abstract = {In this paper we present framework for hierarchical calibration of multi-camera based teleimmersion systems. First, we calibrate the internal camera parameters and geometry of each stereo cluster using a checkerboard. Next, we present a robust and efficient method to externally calibrate the location of the stereo clusters using virtual calibration object created by two LED markers. Our novel algorithm does not require for all the cameras to share common workspace; only pairwise overlap is required. Finally, we address geometric correspondence between several remote locations by proposing a simple calibration method.},
+	urldate = {2014-10-31},
+	booktitle = {Proceedings of the 2Nd {International} {Conference} on {Immersive} {Telecommunications}},
+	publisher = {ICST (Institute for Computer Sciences, Social-Informatics and Telecommunications Engineering)},
+	author = {Kurillo, Gregorij and Li, Zeyu and Bajcsy, Ruzena},
+	year = {2009},
+	keywords = {AR},
+	pages = {1:1--1:6},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/U2ZPKX3E/Kurillo et al. - 2009 - Framework for Hierarchical Calibration of Multi-ca.pdf:application/pdf}
+}
+
+@inproceedings{flyinghead,
+	address = {New York, NY, USA},
+	series = {{CHI} {EA} '13},
+	title = {Flying {Head}: {A} {Head} {Motion} {Synchronization} {Mechanism} for {Unmanned} {Aerial} {Vehicle} {Control}},
+	isbn = {978-1-4503-1952-2},
+	shorttitle = {Flying {Head}},
+	url = {http://doi.acm.org/10.1145/2468356.2468721},
+	doi = {10.1145/2468356.2468721},
+	abstract = {We propose an unmanned aerial vehicle (UAV) control mechanism, called a "Flying Head" which synchronizes a human head and the UAV motions. The accurate manipulation of UAVs is difficult as their control typically involves hand-operated devices. We can incorporate the UAV control using human motions such as walking, looking around and crouching. The system synchronizes the operator and UAV positions in terms of the horizontal and vertical positions and the yaw orientation. The operator can use the UAV more intuitively as such manipulations are more in accord with kinesthetic. Finally, we discuss flying telepresence applications.},
+	urldate = {2014-10-31},
+	booktitle = {{CHI} '13 {Extended} {Abstracts} on {Human} {Factors} in {Computing} {Systems}},
+	publisher = {ACM},
+	author = {Higuchi, Keita and Rekimoto, Jun},
+	year = {2013},
+	
+	keywords = {UAV},
+	pages = {2029--2038},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/P54PJXD2/Higuchi and Rekimoto - 2013 - Flying Head A Head Motion Synchronization Mechani.pdf:application/pdf}
+}
+
+@inproceedings{flyingeyes,
+	address = {New York, NY, USA},
+	series = {{CHI} {EA} '11},
+	title = {Flying {Eyes}: {Free}-space {Content} {Creation} {Using} {Autonomous} {Aerial} {Vehicles}},
+	isbn = {978-1-4503-0268-5},
+	shorttitle = {Flying {Eyes}},
+	url = {http://doi.acm.org/10.1145/1979742.1979627},
+	doi = {10.1145/1979742.1979627},
+	abstract = {Highly effective 3D-camerawork techniques that do not have physical limitations have been developed for creating three-dimensional (3D) computer games. Recent techniques used for real-world visual content creation, such as those used for sports broadcasting and motion pictures, also incorporate cameras moving in 3D physical space to provide viewers with a more engaging experience. For such purpose, wired cameras or mechanically controlled cameras are used, but they require huge and expensive infrastructure, and their freedom of motion is limited. To realize more flexible free-space camerawork at reasonable cost, we propose a system called "Flying Eyes" based on autonomous aerial vehicles. Flying Eyes tracks target humans based on vision processing, and computes camera paths by controlling the camera position and orientation.},
+	urldate = {2014-10-31},
+	booktitle = {{CHI} '11 {Extended} {Abstracts} on {Human} {Factors} in {Computing} {Systems}},
+	publisher = {ACM},
+	author = {Higuchi, Keita and Ishiguro, Yoshio and Rekimoto, Jun},
+	year = {2011},
+	keywords = {UAV},
+	pages = {561--570},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/ZWCS33Z4/Higuchi et al. - 2011 - Flying Eyes Free-space Content Creation Using Aut.pdf:application/pdf}
+}
+
+@inproceedings{pengyfly,
+	title = {Comparing steering-based travel techniques for search tasks in a {CAVE}},
+	doi = {10.1109/VR.2011.5759443},
+	abstract = {We present a novel bimanual body-directed travel technique, PenguFly (PF), and compare it with two standard travel-by-pointing techniques by conducting a between-subject experiment in a CAVE. In PF, the positions of the user's head and hands are projected onto the ground, and travel direction and speed are computed based on direction and magnitude of the vector from the midpoint of the projected hand positions to the projected head position. The two baseline conditions both use a single hand to control the direction, with speed controlled discretely by button pushes with the same hand in one case, and continuously by the distance between the hands in the other case. Users were asked to travel through a simple virtual world and collect virtual coins within a set time. We found no significant differences between travel conditions for reported presence or usability, but a significant increase in nausea with PF. Total travel distance was significantly higher for the baseline condition with discrete speed selection, whereas travel accuracy in terms of coin-to-distance ratio was higher with PF.},
+	booktitle = {2011 {IEEE} {Virtual} {Reality} {Conference} ({VR})},
+	author = {von Kapri, A. and Rick, T. and Feiner, S.},
+	month = mar,
+	year = {2011},
+	keywords = {AR},
+	pages = {91--94},
+	file = {IEEE Xplore Abstract Record:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/PK6FCC94/abs_all.html:text/html;IEEE Xplore Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/IAZXRV98/von Kapri et al. - 2011 - Comparing steering-based travel techniques for sea.pdf:application/pdf}
+}
+
+@inproceedings{birdie,
+	address = {Toronto, Canada},
+	series = {{CHI} {EA} '15},
+	title = {Birdie: {Towards} a true flying experience},
+	abstract = {In this paper, we present Birdie, a novel sensory experience as a first step towards a true flying experience. With the use of a tele-existence concept [6, 2] an augmented human controls an unmanned aerial vehicle (UAV) remotely. At the same time he or she receives multi sensory feedback like vision and sound from the UAV. We also introduce intuitive interactions, as well a possible implementation of Birdie.},
+	booktitle = {Extended {Abstracts} of the 32nd {Annual} {SIGCHI} {Conference} on {Human} {Factors} in {Computing} {Systems} ({CHI}14)},
+	author = {Petry, Benjamin and Ortega-Avila, Santiago and Nanayakkara, Suranga and Foong, Shaohui},
+	year = {2014},
+	keywords = {AR, UAV},
+	file = {Birdie - Towards a true flying experience.pdf:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/RHA76VSM/Birdie - Towards a true flying experience.pdf:application/pdf}
+}
+
+@inproceedings{backofdeviceinteraction,
+	address = {New York, NY, USA},
+	series = {{CHI} '09},
+	title = {Back-of-device {Interaction} {Allows} {Creating} {Very} {Small} {Touch} {Devices}},
+	isbn = {978-1-60558-246-7},
+	url = {http://doi.acm.org/10.1145/1518701.1518995},
+	doi = {10.1145/1518701.1518995},
+	abstract = {In this paper, we explore how to add pointing input capabilities to very small screen devices. On first sight, touchscreens seem to allow for particular compactness, because they integrate input and screen into the same physical space. The opposite is true, however, because the user's fingers occlude contents and prevent precision. We argue that the key to touch-enabling very small devices is to use touch on the device backside. In order to study this, we have created a 2.4" prototype device; we simulate screens smaller than that by masking the screen. We present a user study in which participants completed a pointing task successfully across display sizes when using a back-of device interface. The touchscreen-based control condition (enhanced with the shift technique), in contrast, failed for screen diagonals below 1 inch. We present four form factor concepts based on back-of-device interaction and provide design guidelines extracted from a second user study.},
+	urldate = {2014-10-31},
+	booktitle = {Proceedings of the {SIGCHI} {Conference} on {Human} {Factors} in {Computing} {Systems}},
+	publisher = {ACM},
+	author = {Baudisch, Patrick and Chu, Gerry},
+	year = {2009},
+	keywords = {Interaction},
+	pages = {1923--1932},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/PQ62TQ6V/Baudisch and Chu - 2009 - Back-of-device Interaction Allows Creating Very Sm.pdf:application/pdf}
+}
+
+@inproceedings{sleepywhispers,
+	address = {New York, NY, USA},
+	series = {{UIST} {Adjunct} {Proceedings} '12},
+	title = {{sleepyWhispers}: {Sharing} {Goodnights} {Within} {Distant} {Relationships}},
+	isbn = {978-1-4503-1582-1},
+	shorttitle = {{sleepyWhispers}},
+	url = {http://doi.acm.org/10.1145/2380296.2380322},
+	doi = {10.1145/2380296.2380322},
+	abstract = {There is a growing body of work in HCI on the design of communication technologies to help support lovers in long distance relationships. We build upon this work by presenting an exploratory study of a prototype device intended to allow distant lovers to share goodnight messages. Our work distinguishes itself by basing distance communication metaphors on elements of familiar, simple co-located behaviours. We argue that voice remains an under-utilised media when designing interactive technologies for long-distant couples. Through exploring the results of a 2-month case study we present some of the unique challenges that using voice entails.},
+	urldate = {2014-10-31},
+	booktitle = {Adjunct {Proceedings} of the 25th {Annual} {ACM} {Symposium} on {User} {Interface} {Software} and {Technology}},
+	publisher = {ACM},
+	author = {Gooch, Daniel and Watts, Leon},
+	year = {2012},
+	pages = {61--62},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/FHPUAC5E/Gooch and Watts - 2012 - sleepyWhispers Sharing Goodnights Within Distant .pdf:application/pdf}
+}
+@inproceedings{lu2013hand,
+  title={Hand and foot gesture interaction for handheld devices},
+  author={Lu, Zhihan and Lal Khan, Muhammad Sikandar and Ur R{\'e}hman, Shafiq},
+  booktitle={Proceedings of the 21st ACM international conference on Multimedia},
+  pages={621--624},
+  year={2013}
+}
+@inproceedings{jalaliniya2013touch,
+  title={Touch-less interaction with medical images using hand \& foot gestures},
+  author={Jalaliniya, Shahram and Smith, Jeremiah and Sousa, Miguel and B{\"u}the, Lars and Pederson, Thomas},
+  booktitle={Proceedings of the 2013 ACM conference on Pervasive and ubiquitous computing adjunct publication},
+  pages={1265--1274},
+  year={2013}
+}
+@article{munoz2017sensor,
+  title={Sensor optimization in smart insoles for post-stroke gait asymmetries using total variation and L 1 distances},
+  author={Munoz-Organero, Mario and Parker, Jack and Powell, Lauren and Davies, Richard and Mawson, Sue},
+  journal={IEEE Sensors Journal},
+  volume={17},
+  number={10},
+  pages={3142--3151},
+  year={2017},
+  publisher={IEEE}
+}
+@inproceedings{elvitigala2021augmented,
+  title={Augmented Foot: A Comprehensive Survey of Augmented Foot Interfaces},
+  author={Elvitigala, Don Samitha and Huber, Jochen and Nanayakkara, Suranga},
+  booktitle={Augmented Humans Conference 2021},
+  pages={228--239},
+  year={2021}
+}
+
+@inproceedings{telesar,
+	address = {New York, NY, USA},
+	series = {{SIGGRAPH} '12},
+	title = {℡{ESAR} {V}: ℡{Existence} {Surrogate} {Anthropomorphic} {Robot}},
+	isbn = {978-1-4503-1680-4},
+	shorttitle = {℡{ESAR} {V}},
+	url = {http://doi.acm.org/10.1145/2343456.2343479},
+	doi = {10.1145/2343456.2343479},
+	abstract = {Telexistence is fundamentally a concept named for the general technology that enables a human being to have a real-time sensation of being at a place other than where he actually exist, and to interact with the remote environment [Tachi et al. 1990]. We have achieved human-like neck movements to visually interact with a remote object in 3 dimensional space through previous versions of TELESAR [Watanabe et al. 2007]. We introduce "TELESAR V" which maps a user's spinal neck, head and arm movements into a dexterous slave robot and allowing the operator to feel the robot's body as his own body through visual, auditory, kinesthetic and fingertip tactile [Sato et al. 2007] sensation. With TELESAR V, operator can perform teleoperations confidently with no prior practise.},
+	urldate = {2014-10-31},
+	booktitle = {{ACM} {SIGGRAPH} 2012 {Emerging} {Technologies}},
+	publisher = {ACM},
+	author = {Fernando, Charith Lasantha and Furukawa, Masahiro and Kurogi, Tadatoshi and Hirota, Kyo and Kamuro, Sho and Sato, Katsunari and Minamizawa, Kouta and Tachi, Susumu},
+	year = {2012},
+	keywords = {AR},
+	pages = {23:1--23:1},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/62JBGS7W/Fernando et al. - 2012 - Telesar V TeleExistence Surrogate Anthropomorphic Robo.pdf:application/pdf}
+}
+
+@inproceedings{virtualdining,
+	address = {New York, NY, USA},
+	series = {{CSCW} '13},
+	title = {Virtually {Dining} {Together} in {Time}-shifted {Environment}: {KIZUNA} {Design}},
+	isbn = {978-1-4503-1331-5},
+	shorttitle = {Virtually {Dining} {Together} in {Time}-shifted {Environment}},
+	url = {http://doi.acm.org/10.1145/2441776.2441863},
+	doi = {10.1145/2441776.2441863},
+	abstract = {Dining with a remote person requires that both participants are available at the same time to eat together. Because of time-zone differences and other such contingent factors, this condition can often be hard to fulfill. One solution may lie in time-shifted communication. A person can enjoy a meal while watching an earlier recorded video of a remote person's dining. However, in a time-shifted environment, achieving dining synchronization is a challenge. In this research, we propose a time-shifted tele-dining system (KIZUNA) enabling people to enjoy a meal together in a virtual environment. The system adapts the displayed video's playback speed to the difference in dining progress between the local and remote person. This is likely to enhance communication and increase enjoyment while dining. A validation experiment revealed that the proposed KIZUNA adaptation method enhanced diners' communication behavior, and significantly enhanced the perceived presence of the remote person, in comparison with conventional time-shifted tele-dining. This result suggests a promising future for the KIZUNA system.},
+	urldate = {2014-10-31},
+	booktitle = {Proceedings of the 2013 {Conference} on {Computer} {Supported} {Cooperative} {Work}},
+	publisher = {ACM},
+	author = {Nawahdah, Mamoun and Inoue, Tomoo},
+	year = {2013},
+	keywords = {AR, Collaboration},
+	pages = {779--788},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/NKTX7PBT/Nawahdah and Inoue - 2013 - Virtually Dining Together in Time-shifted Environm.pdf:application/pdf}
+}
+
+@inproceedings{emotichairdeaf,
+	title = {Modelling {Perceptual} {Elements} of {Music} in a {Vibrotactile} {Display} for {Deaf} {Users}: {A} {Field} {Study}},
+	shorttitle = {Modelling {Perceptual} {Elements} of {Music} in a {Vibrotactile} {Display} for {Deaf} {Users}},
+	doi = {10.1109/ACHI.2009.64},
+	abstract = {The model human cochlea (MHC) is a sensory substitution technique for presenting music as multiple discrete channels of vibrotactile stimuli. The MHC prototype was introduced to a group of deaf senior citizens at a community centre, where they could try the chair, and provide us with feedback about their experience. Preliminary results from this work suggest that the MHC can potentially offer a more effective means of expressing basic emotional information from music in a vibrotactile display when the signals more closely match the perceptual elements of the music such as melody and instrument parts. We describe the MHC prototype and present the results of our field study, which extends our lab experiments with the MHC to include deaf and hard of hearing participants in a real world setting.},
+	booktitle = {Second {International} {Conferences} on {Advances} in {Computer}-{Human} {Interactions}, 2009. {ACHI} '09},
+	author = {Karam, M. and Nespoli, G. and Russo, F. and Fels, D.I.},
+	month = feb,
+	year = {2009},
+	keywords = {Deaf, Music, Tactile},
+	pages = {249--254},
+	file = {20151019_175642.jpg:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/N4W58BCW/20151019_175642.jpg:image/jpeg;20151019_175655.jpg:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/DJV364WJ/20151019_175655.jpg:image/jpeg;IEEE Xplore Abstract Record:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/9KMTBKM9/abs_all.html:text/html;IEEE Xplore Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/KQ82SNU4/Karam et al. - 2009 - Modelling Perceptual Elements of Music in a Vibrot.pdf:application/pdf}
+}
+
+@inproceedings{xpaaand,
+	address = {New York, NY, USA},
+	series = {{CHI} '11},
+	title = {Xpaaand: {Interaction} {Techniques} for {Rollable} {Displays}},
+	isbn = {978-1-4503-0228-9},
+	shorttitle = {Xpaaand},
+	url = {http://doi.acm.org/10.1145/1978942.1979344} ,
+	doi = {10.1145/1978942.1979344},
+	abstract = {We present a device concept and a prototype of a future mobile device. By featuring a rollable display, its display size and its form factor can be dynamically changed. Moreover, we investigate how physical resizing of the display can be used as an input technique for interacting with digital contents and present a set of novel interaction techniques. Evaluation results show that physical resizing of the display can improve the way we interact with digital contents on mobile devices.},
+	urldate = {2014-08-26},
+	booktitle = {Proceedings of the {SIGCHI} {Conference} on {Human} {Factors} in {Computing} {Systems}},
+	publisher = {ACM},
+	author = {Khalilbeigi, Mohammadreza and Lissermann, Roman and Mühlhäuser, Max and Steimle, Jürgen},
+	year = {2011},
+	keywords = {FOLED, Tangible},
+	pages = {2729--2732},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/TD66BFHS/Khalilbeigi et al. - 2011 - Xpaaand Interaction Techniques for Rollable Displ.pdf:application/pdf}
+}
+
+@inproceedings{papervideo,
+	address = {New York, NY, USA},
+	series = {{MM} '12},
+	title = {{PaperVideo}: {Interacting} with {Videos} on {Multiple} {Paper}-like {Displays}},
+	isbn = {978-1-4503-1089-5},
+	shorttitle = {{PaperVideo}},
+	url = {http://doi.acm.org/10.1145/2393347.2393372} ,
+	doi = {10.1145/2393347.2393372},
+	abstract = {Sifting and sense-making of video collections are important tasks in many professions. In contrast to sense-making of paper documents, where physical structuring of many documents has proven to be key to effective work, interaction with video is still restricted to the traditional "one video at a time" paradigm. This paper investigates how interaction with video can benefit from paper-like displays that allow for working with multiple videos simultaneously in physical space. We present a corresponding approach and system called PaperVideo, including novel interaction concepts for both video and audio. These include spatial techniques for temporal navigation, arranging, grouping and linking of videos, as well as for managing video contents and simultaneous audio playback on multiple displays. An evaluation with users provides insights into how paper-based navigation with videos improves active video work.},
+	urldate = {2014-08-26},
+	booktitle = {Proceedings of the 20th {ACM} {International} {Conference} on {Multimedia}},
+	publisher = {ACM},
+	author = {Lissermann, Roman and Olberding, Simon and Petry, Benjamin and Mühlhäuser, Max and Steimle, Jürgen},
+	year = {2012},
+	keywords = {Video, Interaction, FOLED, Tangible},
+	pages = {129--138},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/MHGNGAJJ/Lissermann et al. - 2012 - PaperVideo Interacting with Videos on Multiple Pa.pdf:application/pdf}
+}
+
+@phdthesis{bachlorthesis,
+	address = {Darmstadt, Germany},
+	type = {Bachelor-{Thesis}},
+	title = {Spatial {Navigation} in {Videos} with multiple {Paper}-like {Displays}},
+	language = {German},
+	school = {Technische Universität Darmstadt},
+	author = {Petry, Benjamin},
+	month = sep,
+	year = {2011},
+	keywords = {Video, Interaction, FOLED, Tangible},
+	file = {Bachelor Arbeit - Benjamin Petry - final.pdf:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/VZ9H468H/Bachelor Arbeit - Benjamin Petry - final.pdf:application/pdf}
+}
+
+@phdthesis{masterthesis,
+	address = {Darmstadt, Germany},
+	type = {Master-{Thesis}},
+	title = {Collaborative {Video} {Work} with {Paper}-like {Displays}},
+	language = {German},
+	school = {Technische Universität Darmstadt},
+	author = {Petry, Benjamin},
+	month = oct,
+	year = {2013},
+	keywords = {Video, Collaboration, Interaction, FOLED, Tangible},
+	file = {Benjamin Petry - Master Thesis.pdf:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/PFBCMWPI/Benjamin Petry - Master Thesis.pdf:application/pdf}
+}
+
+@article{smarthome,
+	title = {Smart {Home} - {Digitally} {Engineered} {Domestic} {Life}},
+	volume = {7},
+	issn = {1617-4909},
+	url = {http://dx.doi.org/10.1007/s00779-003-0228-9},
+	doi = {10.1007/s00779-003-0228-9},
+	abstract = {The purpose of the Smart Home Project is to devise a set of intelligent home appliances that can provide an awareness of the users' needs, providing them with a better home life experience without overpowering them with complex technologies and intuitive user interfaces. Our main aim for the project is to improve day-to-day home life with smart computer technologies while still keeping the home life as normal as possible – we refer to this as “digitally engineering analogue home life”.},
+	number = {3-4},
+	urldate = {2014-10-31},
+	journal = {Personal Ubiquitous Comput.},
+	author = {Park, Sang Hyun and Won, So Hee and Lee, Jong Bong and Kim, Sung Woo},
+	month = jul,
+	year = {2003},
+	pages = {189--196},
+	file = {ACM Full Text PDF:/Users/Benjamin/Dropbox/Benjamin/PhD Studies/Library/Zotero Data/storage/GS854WTW/Park et al. - 2003 - Smart Home &Ndash\; Digitally Engineered Domestic L.pdf:application/pdf}
+}
+
+ @misc{brainyquote, title={Jeff Bezos}, url={https://www.brainyquote.com/quotes/jeff_bezos_909489}, journal={BrainyQuote}, publisher={Xplore}} 
+ 
+@inproceedings{matthies2017capsoles,
+author = {Matthies, Denys J. C. and Roumen, Thijs and Kuijper, Arjan and Urban, Bodo},
+title = {CapSoles: Who is Walking on What Kind of Floor?},
+year = {2017},
+isbn = {9781450350754},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3098279.3098545},
+doi = {10.1145/3098279.3098545},
+abstract = {Foot interfaces, such as pressure-sensitive insoles, still yield unused potential such as for implicit interaction. In this paper, we introduce CapSoles, enabling smart insoles to implicitly identify who is walking on what kind of floor. Our insole prototype relies on capacitive sensing and is able to sense plantar pressure distribution underneath the foot, plus a capacitive ground coupling effect. By using machine-learning algorithms, we evaluated the identification of 13 users, while walking, with a confidence of ∼95\% after a recognition delay of ∼1s. Once the user's gait is known, again we can discover irregularities in gait plus a varying ground coupling. While both effects in combination are usually unique for several ground surfaces, we demonstrate to distinguish six kinds of floors, which are sand, lawn, paving stone, carpet, linoleum, and tartan with an average accuracy of ∼82\%. Moreover, we demonstrate the unique effects of wet and electrostatically charged surfaces.},
+booktitle = {Proceedings of the 19th International Conference on Human-Computer Interaction with Mobile Devices and Services},
+articleno = {9},
+numpages = {14},
+keywords = {user identification, smart insole, data mining, implicit input, shoe interface, floor detection, wearable computing, ground surface detection, foot interaction, capacitive sensing, machine learning},
+location = {Vienna, Austria},
+series = {MobileHCI '17}
+}
+
+
+@inproceedings{elvitigala2019gymsoles,
+  title={GymSoles: Improving Squats and Dead-Lifts by Visualizing the User's Center of Pressure},
+  author={Elvitigala, Don Samitha and Matthies, Denys JC and David, L{\"o}ic and Weerasinghe, Chamod and Nanayakkara, Suranga},
+  booktitle={Proceedings of the 2019 CHI Conference on Human Factors in Computing Systems},
+  pages={1--12},
+  year={2019}
+}
+
+@article{nazeer2020arduino,
+  title={Arduino Controlled Cooling Smart Footwear},
+  author={Nazeer, A Mohamed and Sasikala, S and Kumar, M Sathish and Yogeshwaran, M and Veeramani, K and Vigneshwaran, R},
+  year={2020}
+}
+
+
+@misc{noauthor_capacitors_nodate,
+	title = {Capacitors - learn.sparkfun.com},
+	url = {https://learn.sparkfun.com/tutorials/capacitors/capacitor-theory},
+	urldate = {2022-08-02},
+    author = {jimblom},
+    year = 2022,
+    organization = {sparkfun},
+	file = {Capacitors - learn.sparkfun.com:C\:\\Users\\mgabr\\Zotero\\storage\\34U8THX4\\capacitor-theory.html:text/html},
+}
+
+@article{ATTARAN2017677,
+title = {The rise of 3-D printing: The advantages of additive manufacturing over traditional manufacturing},
+journal = {Business Horizons},
+volume = {60},
+number = {5},
+pages = {677-688},
+year = {2017},
+issn = {0007-6813},
+doi = {https://doi.org/10.1016/j.bushor.2017.05.011},
+url = {https://www.sciencedirect.com/science/article/pii/S0007681317300897},
+author = {Mohsen Attaran},
+keywords = {3-D printing, Additive manufacturing, Rapid prototyping, Global supply chain, Mass customization},
+abstract = {The use of additive manufacturing technologies in different industries has increased substantially during the past years. Henry Ford introduced the moving assembly line that enabled mass production of identical products in the 20th century. Currently, additive manufacturing enables and facilitates production of moderate to mass quantities of products that can be customized individually. Additive manufacturing technologies are opening new opportunities in terms of production paradigm and manufacturing possibilities. Manufacturing lead times will be reduced substantially, new designs will have shorter time to market, and customer demand will be met more quickly. This article identifies additive manufacturing implementation challenges, highlights its evolving technologies and trends and their impact on the world of tomorrow, discusses its advantages over traditional manufacturing, explores its impact on the supply chain, and investigates its transformative potential and impact on various industry segments.}
+}
+
+@INPROCEEDINGS{7474526,
+
+  author={Pieterse, F. F. and Nel, A. L.},
+
+  booktitle={2016 IEEE Global Engineering Education Conference (EDUCON)}, 
+
+  title={The advantages of 3D printing in undergraduate mechanical engineering research}, 
+
+  year={2016},
+
+  volume={},
+
+  number={},
+
+  pages={25-31},
+
+  doi={10.1109/EDUCON.2016.7474526}}
+
+@article{brewer2000research,
+  title={Research design and issues of validity},
+  author={Brewer, Marilynn and Crano, William D},
+  journal={Handbook of research methods in social and personality psy.},
+  pages={3--16},
+  year={2000}
+}
+
+@misc{metaverse,
+	title = {What Is the Metaverse, Exactly? {\textbar} {WIRED}},
+	url = {https://www.wired.com/story/what-is-the-metaverse/},
+	urldate = {2022-08-06},
+    author = {Eric Ravenscraft},
+    year = 2022,
+    organization = {wired},
+	file = {What Is the Metaverse, Exactly? | WIRED:C\:\\Users\\mgabr\\Zotero\\storage\\VQVH7JU2\\what-is-the-metaverse.html:text/html},
+}
+
+
+@article{bowser2018reducing,
+  title={Reducing impact loading in runners: A one-year follow-up},
+  author={Bowser, Bradley J and Fellin, Rebecca and Milner, Clare E and Pohl, Michael B and Davis, Irene S},
+  journal={Medicine and science in sports and exercise},
+  volume={50},
+  number={12},
+  pages={2500},
+  year={2018},
+  publisher={NIH Public Access}
+}
+
+
+@article{diffundergrounds,
+author = {Abdul Yamin, Noor Arifah Azwani and Amran, M.N. and Basaruddin, Khairul and Salleh, Ahmad and Rusli, Wan},
+year = {2017},
+month = {04},
+pages = {2313-2318},
+title = {Ground reaction force response during running on different surface hardness},
+volume = {12},
+journal = {ARPN Journal of Engineering and Applied Sciences}
+}
+
+@article{wobbrock2016research,
+  title={Research contributions in human-computer interaction},
+  author={Wobbrock, Jacob O and Kientz, Julie A},
+  journal={interactions},
+  volume={23},
+  number={3},
+  pages={38--44},
+  year={2016},
+  publisher={ACM New York, NY, USA}
+}
+@misc{noauthor_most_2019,
+	title = {Most Used Features of Smartwatches},
+	url = {https://whatphone.com.au/guide/most-used-features-of-smartwatches},
+	abstract = {Smartwatches' features enhance the overall consumer experience. They can function as trackers for the concerned parent hoping to keep tabs of a child that’s out of sight.},
+    author = {Neil Aitken},
+    year = 2019,
+    organization = {WhatPhone},
+	titleaddon = {{WhatPhone}},
+	urldate = {2022-08-06},
+	date = {2019-06-26},
+	langid = {australian},
+	note = {Section: Apple},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\6845EG7M\\most-used-features-of-smartwatches.html:text/html},
+}
+
+@misc{noauthor_gensole_nodate,
+	title = {Gensole},
+	url = {//gensole.com/},
+    author = {Gensole Team},
+    year = 2021,
+    organization = {Gensole},
+	abstract = {Generate Insoles for 3D Printing},
+	titleaddon = {Gensole},
+	urldate = {2022-08-02},
+	langid = {british},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\G4VBU8ZX\\gensole.com.html:text/html},
+}
+
+@INPROCEEDINGS{inflateShoe,
+
+  author={Wang, Yue and Minor, Mark A.},
+
+  booktitle={2014 IEEE/RSJ International Conference on IROS}, 
+
+  title={Design of a bladder based elastomeric Smart Shoe for haptic terrain display}, 
+
+  year={2014},
+
+  volume={},
+
+  number={},
+
+  pages={1236-1241},
+
+  doi={10.1109/IROS.2014.6942715}}
+
+@ARTICLE{8469101,
+
+  author={Wang, Yue and Minor, Mark A.},
+
+  journal={IEEE/ASME Transactions on Mechatronics}, 
+
+  title={Design and Evaluation of a Soft Robotic Smart Shoe for Haptic Terrain Rendering}, 
+
+  year={2018},
+
+  volume={23},
+
+  number={6},
+
+  pages={2974-2979},
+
+  doi={10.1109/TMECH.2018.2871631}}
+
+  @ARTICLE{9234444,
+
+  author={Wang, Yue and Truong, Takara E. and Chesebrough, Samuel W. and Willemsen, Pete and Foreman, K. Bo and Merryweather, Andrew S. and Hollerbach, John M. and Minor, Mark A.},
+
+  journal={IEEE Transactions on Haptics}, 
+
+  title={Augmenting Virtual Reality Terrain Display with Smart Shoe Physical Rendering: A Pilot Study}, 
+
+  year={2021},
+
+  volume={14},
+
+  number={1},
+
+  pages={174-187},
+
+ }
+
+
+@article{akayenergy,
+  title={Energy Harvesting Footwear},
+  author={Akay, H and Xu, R and Kim, SG},
+  journal={US Patent},
+  number={62/449208},
+  year={2017}
+}
+
+@inproceedings{10.1145/3379337.3415828,
+author = {Strohmeier, Paul and G\"{u}ng\"{o}r, Seref and Herres, Luis and Gudea, Dennis and Fruchard, Bruno and Steimle, J\"{u}rgen},
+title = {BARefoot: Generating Virtual Materials Using Motion Coupled Vibration in Shoes},
+year = {2020},
+isbn = {9781450375146},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3379337.3415828}, 
+doi = {10.1145/3379337.3415828},
+abstract = {Many features of materials can be experienced through tactile cues, even using one's feet. For example, one can easily distinguish between moss and stone without looking at the ground. However, this type of material experience is largely not supported in AR and VR applications. We present bARefoot, a prototype shoe providing tactile impulses tightly coupled to motor actions. This enables generating virtual material experiences such as compliance, elasticity, or friction. To explore the parameter space of such sensorimotor coupled vibrations, we present a design tool enabling rapid design of virtual materials. We report initial explorations to increase understanding of how parameters can be optimized for generating compliance, and to examine the effect of dynamic parameters on material experiences. Finally, we present a series of use cases that demonstrate the potential of bARefoot for VR and AR.},
+booktitle = {Proceedings of the 33rd Annual ACM Symposium on User Interface Software and Technology},
+pages = {579–593},
+numpages = {15},
+keywords = {haptic rendering, material experiences, wearable computing, body-based interaction, haptic feedback, shoes, virtual reality, augmented reality},
+location = {Virtual Event, USA},
+series = {UIST '20}
+}
+
+@inproceedings{10.1145/3544548.3580716,
+author = {Sabnis, Nihar and Wittchen, Dennis and Reed, Courtney N. and Pourjafarian, Narjes and Steimle, J\"{u}rgen and Strohmeier, Paul},
+title = {Haptic Servos: Self-Contained Vibrotactile Rendering System for Creating or Augmenting Material Experiences},
+year = {2023},
+isbn = {9781450394215},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3544548.3580716   } ,
+doi = {10.1145/3544548.3580716 },
+abstract = {When vibrations are synchronized with our actions, we experience them as material properties. This has been used to create virtual experiences like friction, counter-force, compliance, or torsion. Implementing such experiences is non-trivial, requiring high temporal resolution in sensing, high fidelity tactile output, and low latency. To make this style of haptic feedback more accessible to non-domain experts, we present Haptic Servos: self-contained haptic rendering devices which encapsulate all timing-critical elements. We characterize Haptic Servos’ real-time performance, showing the system latency is &lt;5&nbsp;ms. We explore the subjective experiences they can evoke, highlighting that qualitatively distinct experiences can be created based on input mapping, even if stimulation parameters and algorithm remain unchanged. A workshop demonstrated that users new to Haptic Servos require approximately ten minutes to set up a basic haptic rendering system. Haptic Servos are open source, we invite others to copy and modify our design.},
+booktitle = {Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems},
+articleno = {522},
+numpages = {17},
+keywords = {material experiences, prototyping, toolkit, haptic feedback, haptic rendering},
+location = {Hamburg, Germany},
+series = {CHI '23}
+}
+
+@inproceedings{10.1145/3025453.3025812    ,  
+author = {Strohmeier, Paul and Hornb\ae{}k, Kasper},
+title = {Generating Haptic Textures with a Vibrotactile Actuator},
+year = {2017},
+isbn = {9781450346559},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3025453.3025812          },
+doi = {10.1145/3025453.3025812        },
+abstract = {Vibrotactile actuation is mainly used to deliver buzzing sensations. But if vibrotactile actuation is tightly coupled to users' actions, it can be used to create much richer haptic experiences. It is not well understood, however, how this coupling should be done or which vibrotactile parameters create which experiences. To investigate how actuation parameters relate to haptic experiences, we built a physical slider with minimal native friction, a vibrotactile actuator and an integrated position sensor. By vibrating the slider as it is moved, we create an experience of texture between the sliding element and its track. We conducted a magnitude estimation experiment to map how granularity, amplitude and timbre relate to the experiences of roughness, adhesiveness, sharpness and bumpiness. We found that amplitude influences the strength of the perceived texture, while variations in granularity and timbre create distinct experiences. Our study underlines the importance of action in haptic perception and suggests strategies for deploying such tightly coupled feedback in everyday devices.},
+booktitle = {Proceedings of the 2017 CHI Conference on Human Factors in Computing Systems},
+pages = {4994–5005},
+numpages = {12},
+keywords = {magnitude estimation, haptic feedback, texture perception},
+location = {Denver, Colorado, USA},
+series = {CHI '17}
+}
+
+@inproceedings{10.1145/3582700.3582728,
+author = {Wittchen, Dennis and Martinez-Missir, Valentin and Mavali, Sina and Sabnis, Nihar and Reed, Courtney N. and Strohmeier, Paul},
+title = {Designing Interactive Shoes for Tactile Augmented Reality},
+year = {2023},
+isbn = {9781450399845},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3582700.3582728   } ,
+doi = {10.1145/3582700.3582728  },
+abstract = {Augmented Footwear has become an increasingly common research area. However, as this is a comparatively new direction in HCI, researchers and designers are not able to build upon common platforms. We discuss the design space of shoes for augmented tactile reality, focussing on physiological and biomechanical factors as well as technical considerations. We present an open source example implementation from this space, intended as an experimental platform for vibrotactile rendering and tactile AR and provide details on experiences that could be evoked with such a system. Anecdotally, the new prototype provided experiences of material properties like compliance, as well as altered perception of their movements and agency. We intend our work to lower the barrier of entry for new researchers and to support the field of tactile rendering in footwear in general by making it easier to compare results between studies.},
+booktitle = {Proceedings of the Augmented Humans International Conference 2023},
+pages = {1–14},
+numpages = {14},
+keywords = {vibrotactile augmentation, haptic rendering, haptic footwear},
+location = {Glasgow, United Kingdom},
+series = {AHs '23}
+}
+
+@INPROCEEDINGS{7992833,
+
+  author={Afzal, Muhammad Raheel and Lee, Hosu and Yoon, Jungwon and Oh, Min-Kyun and Lee, Chang-Han},
+
+  booktitle={2017 14th International Conference on Ubiquitous Robots and Ambient Intelligence (URAI)}, 
+
+  title={Development of an augmented feedback system for training of gait improvement using vibrotactile cues}, 
+
+  year={2017},
+
+  volume={},
+
+  number={},
+
+  pages={818-823},
+
+  doi={10.1109/URAI.2017.7992833}}
+
+
+@article{zaffagnini_influence_2017,
+	title = {Influence of Cleats-Surface Interaction on the Performance and Risk of Injury in Soccer: A Systematic Review},
+	volume = {2017},
+	issn = {1176-2322},
+	url = {https://doi.org/10.1155/2017/1305479}          ,
+	doi = {10.1155/2017/1305479},
+	abstract = {{\textless}italic{\textgreater}Objective{\textless}/italic{\textgreater}. To review the influence of cleats-surface interaction on the performance and risk of injury in soccer athletes. {\textless}italic{\textgreater}Design{\textless}/italic{\textgreater}. Systematic review. {\textless}italic{\textgreater}Data Sources{\textless}/italic{\textgreater}. Scopus, Web of science, {PubMed}, and B-on. {\textless}italic{\textgreater}Eligibility Criteria{\textless}/italic{\textgreater}. Full experimental and original papers, written in English that studied the influence of soccer cleats on sports performance and injury risk in artificial or natural grass. {\textless}italic{\textgreater}Results{\textless}/italic{\textgreater}. Twenty-three articles were included in this review: nine related to performance and fourteen to injury risk. On artificial grass, the soft ground model on dry and wet conditions and the turf model in wet conditions are related to worse performance. Compared to rounded studs, bladed ones improve performance during changes of directions in both natural and synthetic grass. Cleat models presenting better traction on the stance leg improve ball velocity while those presenting a homogeneous pressure across the foot promote better kicking accuracy. Bladed studs can be considered less secure by increasing plantar pressure on lateral border. The turf model decrease peak plantar pressure compared to other studded models. {\textless}italic{\textgreater}Conclusion{\textless}/italic{\textgreater}. The {\textless}italic{\textgreater}soft ground{\textless}/italic{\textgreater} model provides lower performance especially on artificial grass, while the turf model provides a high protective effect in both fields.},
+	pages = {1305479},
+	journaltitle = {Applied Bionics and Biomechanics},
+	author = {Silva, Diogo C. F. and Santos, Rubim and Vilas-Boas, João Paulo and Macedo, Rui and Montes, António Mesquita and Sousa, Andreia S. P.},
+	editor = {Zaffagnini, Stefano},
+	date = {2017-06-08},
+	note = {Publisher: Hindawi},
+	year={2017}
+}
+
+@article{harvest,
+author = {Bo Han and Spyridon Vassilaras and Constantinos B Papadias and Rohan Soman and Marios A Kyriakides and Toula Onoufriou and Rasmus H Nielsen and Ramjee Prasad},
+title ={Harvesting energy from vibrations of the underlying structure},
+journal = {Journal of Vibration and Control},
+volume = {19},
+number = {15},
+pages = {2255-2269},
+year = {2013},
+doi = {10.1177/1077546313501537},
+
+URL = { 
+        https://doi.org/10.1177/1077546313501537  
+    
+},
+eprint = { 
+        https://doi.org/10.1177/1077546313501537  
+    
+}
+,
+    abstract = { The use of wireless sensors for structural health monitoring offers several advantages such as small size, easy installation and minimal intervention on existing structures. However the most significant concern about such wireless sensors is the lifetime of the system, which depends heavily on the type of power supply. No matter how energy efficient the operation of a battery operated sensor is, the energy of the battery will be exhausted at some point. In order to achieve a virtually unlimited lifetime, the sensor node should be able to recharge its battery in an easy way. Energy harvesting emerges as a technique that can harvest energy from the surrounding environment. Among all possible energy harvesting solutions, kinetic energy harvesting seems to be the most convenient, especially for sensors placed on structures that experience regular vibrations. Such micro-vibrations can be harmful to the long-term structural health of a building or bridge, but at the same time they can be exploited as a power source to power the wireless sensors that are monitoring this structural health. This paper presents a new energy harvesting method based on a vibration driven electromagnetic harvester. By using an improved Maximum Power Point Tracking technique on the conversion circuit, the proposed method is shown to maximize the conversion coefficient from kinetic energy to applicable electrical energy. }
+}
+
+
+
+
+
+@article{wang2016estimation,
+  title={Estimation of temporal gait parameters using a wearable microphone-sensor-based system},
+  author={Wang, Cheng and Wang, Xiangdong and Long, Zhou and Yuan, Jing and Qian, Yueliang and Li, Jintao},
+  journal={Sensors},
+  volume={16},
+  number={12},
+  pages={2167},
+  year={2016},
+  publisher={MDPI}
+}
+
+
+@article{chander2020wearable,
+  title={Wearable stretch sensors for human movement monitoring and fall detection in ergonomics},
+  author={Chander, Harish and Burch, Reuben F and Talegaonkar, Purva and Saucier, David and Luczak, Tony and Ball, John E and Turner, Alana and Kodithuwakku Arachchige, Sachini NK and Carroll, Will and Smith, Brian K and others},
+  journal={International journal of environmental research and public health},
+  volume={17},
+  number={10},
+  pages={3554},
+  year={2020},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+
+
+@article{bohm2019cluster,
+  title={Cluster analysis to identify foot motion patterns in children with flexible flatfeet using gait analysis—A statistical approach to detect decompensated pathology?},
+  author={B{\"o}hm, Harald and Oestreich, Claudia and Rethwilm, Roman and Federolf, Peter and D{\"o}derlein, Leonhard and Fujak, Albert and Dussa, Chakravarty U},
+  journal={Gait \& Posture},
+  volume={71},
+  pages={151--156},
+  year={2019},
+  publisher={Elsevier}
+}
+
+
+@article{elvitigala2020stressfoot,
+  title={StressFoot: Uncovering the potential of the foot for acute stress sensing in sitting posture},
+  author={Elvitigala, Don Samitha and Matthies, Denys JC and Nanayakkara, Suranga},
+  journal={Sensors},
+  volume={20},
+  number={10},
+  pages={2882},
+  year={2020},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+
+
+@misc{noauthor_3d_2021,
+	title = {3D Printing Supports: 3 Easy Steps to Success},
+	url = {https://all3dp.com/2/3d-printing-supports-guide-all-you-need-to-know/},
+	shorttitle = {3D Printing Supports},
+	abstract = {3D printing supports is often essential when dealing with a difficult model. Let's go over support types as well as settings for success!},
+	titleaddon = {All3DP},
+    author = {Tian Ooi},
+    year = 2021,
+    organization = {all3dp},
+	urldate = {2022-07-30},
+	date = {2021-09-18},
+	langid = {english},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\RFQ9JFTH\\3d-printing-supports-guide-all-you-need-to-know.html:text/html},
+}
+
+
+@misc{noahor_why_2022,
+	title = {Why Does A Smartwatch Flashes Green? (It's Effect)},
+	url = {https://gorilla-fitnesswatches.com/why-does-a-smartwatch-flashes-green/},
+	shorttitle = {Why Does A Smartwatch Flashes Green?},
+	abstract = {Why does you Smartwatch flashes green? The green light flashes to monitor the heart rate activities. Sensors produce this green...},
+    author = {Saad Dastagir},
+    year = 2022,
+    organization = {Gorilla-Fitnesswatches},
+	urldate = {2022-07-31},
+	date = {2022-04-12},
+	langid = {american},
+	note = {Blog},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\9NUL25P9\\why-does-a-smartwatch-flashes-green.html:text/html},
+}
+
+@misc{delbeck_beinimplantat_2019,
+	title = {Beinimplantat: Mehr Komfort durch Vollbelastbarkeit},
+	url = {https://www.medica.de/de/News/Interviews/Ältere_Interviews/Interviews_2019/Blutzuckermessung_Infrarot_statt_invasiv},
+	shorttitle = {Beinimplantat},
+	abstract = {Beinimplantate - bei angeborenen oder erworbenen Beinlängendifferenzen sind sie unverzichtbar. Eine volle Gewichtsbelastung während der Beinverlängerung ist jedoch bei den bisherigen Implantaten nicht möglich. In der 3D-Chirurgie am Klinikum der Universität München wurde nun erstmals ein Implantat angewendet, das eine sofortige Gewichtsbelastung ermöglicht.},
+	author = {Delbeck, Sven},
+    year = 2019,
+    organization = {Fachhochschule Südwestfalen},
+	urldate = {2022-07-31},
+	date = {2019-03-22},
+	langid = {german},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\ECHKBH5Y\\Blutzuckermessung_Infrarot_statt_invasiv.html:text/html},
+}
+
+
+@misc{noauthor_smartwatch_nodate,
+	title = {Smartwatch market share worldwide by vendor 2021},
+	url = {https://www.statista.com/statistics/1296818/smartwatch-market-share/},
+	abstract = {In 2021, Apple led the global smart watch market, holding over 30 percent of the market.},
+    author = {Federica Laricchia},
+    organization  = {statista},
+    year = 2021,
+	titleaddon = {Statista},
+	urldate = {2022-08-06},
+	langid = {english},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\656733LX\\smartwatch-market-share.html:text/html},
+}
+
+
+@misc{cybershoes_nodate,
+	title = {Cybershoes for Quest \& {SteamVR}{VR} Gaming Shoe},
+	url = {https://www.cybershoes.com/us/features/},
+	abstract = {Fight motion sickness Activate your body Use feet to walk},
+	titleaddon = {Cybershoes {US}},
+	urldate = {2022-08-06},
+    year = 2021,
+    author = {YUKO ICHIKAWA},
+    organization = {2021 Cybershoes, Inc.},
+	langid = {british},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\D6298BBW\\features.html:text/html},
+}
+
+@misc{digitsole_nodate,
+	title = {Digitsole Smartshoe ist ein selbstschnürender Sneaker},
+	url = {https://www.gadget-rausch.de/digitsole-smartshoe-ist-ein-selbstschnuerender-sneaker/},
+	abstract = {In einer Zeit, in der zunehmend alles digitalisiert und mit dem Internet verbunden wird, stellt sich manchen die Frage; wo hört es auf? Soviel sei gesagt, nicht bei unseren Schuhen! Der Digitsole Smartshoe ist der erste Schuh, der sich mit dem Smartphone verbinden und steuern lässt. Auf diesen Weg ist der Benutzer bestens darüber informiert, wie sein Tag wortwörtlich gelaufen...},
+     author = {Dennis Metz},
+    organization  = {gadget-rausch},
+    year = 2022,
+	titleaddon = {Gadget-Rausch},
+	urldate = {2022-08-06},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\FPLAVAN8\\digitsole-smartshoe-ist-ein-selbstschnuerender-sneaker.html:text/html},
+}
+
+@misc{noauthor_digitsole_nodate,
+	title = {Digitsole® digital health company and leader in the e-health space},
+	url = {https://digitsole.com/},
+    year = 2022 ,
+    organization = {Digitsole},
+    author = {Sales team},
+	abstract = {Digitsole brings together digital mobility biomarkers and biomechanical data with clinical expertise to improve the wellbeing throughout their lives.},
+	titleaddon = {Digitsole},
+	urldate = {2022-08-06},
+	langid = {british},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\DAULGRH4\\digitsole.com.html:text/html},
+}
+
+@misc{stryd,
+	title = {Running with Power},
+	url = {https://www.stryd.com/us/www.stryd.com/us/en/},
+	abstract = {Stryd running power meter},
+	titleaddon = {Stryd (United States)},
+    year = 2022,
+    organization = {Stryd},
+    author = {Stryd Team},
+	urldate = {2022-08-06},
+	langid = {english},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\Q3T54Q4I\\en.html:text/html},
+}
+
+@Article{sports8070103,
+AUTHOR = {Imbach, Frank and Candau, Robin and Chailan, Romain and Perrey, Stephane},
+TITLE = {Validity of the Stryd Power Meter in Measuring Running Parameters at Submaximal Speeds},
+JOURNAL = {Sports},
+VOLUME = {8},
+YEAR = {2020},
+NUMBER = {7},
+ARTICLE-NUMBER = {103},
+URL = {https://www.mdpi.com/2075-4663/8/7/103},
+PubMedID = {32698464},
+ISSN = {2075-4663},
+ABSTRACT = {This study assessed the Stryd running power meter validity at sub-maximal speeds (8 to 19 km/h). Six recreational runners performed an incremental indoor running test. Power output (PO), ground contact time (GCT) and leg spring stiffness (LSS) were compared to reference measures recorded by portable metabolic analyser, force platforms and motion capture system. A Bayesian framework was conducted for systems validity and comparisons. We observed strong and positive linear relationships between Stryd PO and oxygen consumption ( R 2 = 0.82 , B F 10 &gt; 100 ), and between Stryd PO and external mechanical power ( R 2 = 0.88 , B F 10 &gt; 100 ). Stryd power meter underestimated PO ( B F 10 &gt; 100 ) whereas GCT and LSS values did not show any significant differences with the reference measures ( B F 10 = 0.008 , B F 10 = 0.007 , respectively). We conclude that the Stryd power meter provides valid measures of GCT and LSS but underestimates the absolute values of PO.},
+DOI = {10.3390/sports8070103}
+}
+
+
+@article{nistler_gravity_2011,
+	title = {Gravity compensation in accelerometer measurements for robot navigation on inclined surfaces},
+	volume = {6},
+	issn = {1877-0509},
+	url = {https://www.sciencedirect.com/science/article/pii/S1877050911005424},
+	doi = {https://doi.org/10.1016/j.procs.2011.08.077},
+	abstract = {Accelerometers are used in most robot navigation systems as sensors for robot speed and localization. Normally, these accelerometers sense the body acceleration, which is integrated to determine the robot velocity, and cumulatively the robot position relative to the starting position. When the robot is moving on a horizontal surface, the computed speed will in general reflect the actual robot speed; however, when the robot is moving on an inclined surface, such as uphill or downhill motions, then the measured speed will include components due to gravity, which are not part of the actual robot speed. Therefore the computed speed will not reflect the actual robot speed. These gravity components must be compensated for in the speed computations to capture the actual robot speed. This paper proposes a computational approach for elimination of the gravity components from the accelerometer measurements using a 3-axis accelerometers combined with 3-axis gyro on tilted surfaces. The compensated accelerometer speed results were compared to simulated robot speed results on inclined surfaces, and were found to accurately reflect the actual robot speed. By using these compensated accelerometer results it becomes possible to determine the robot speed even under wheel slip conditions.},
+	pages = {413--418},
+	journaltitle = {Procedia Computer Science},
+	author = {Nistler, Jonathan R. and Selekwa, Majura F.},
+	date = {2011},
+	keywords = {accelerometers, gravity compensation, {IMU}, mobile robots, Odometry},
+}
+
+
+@inreference{noauthor_pressure_2022,
+	title = {Pressure measurement},
+	rights = {Creative Commons Attribution-{ShareAlike} License},
+	url = {https://en.wikipedia.org/w/index.php?title=Pressure_measurement&oldid=1098046463},
+	abstract = {Pressure measurement is the measurement of an applied force by a fluid (liquid or gas) on a surface. Pressure is typically measured in units of force per unit of surface area. Many techniques have been developped for the measurement of pressure and vacuum. Instruments used to measure and display pressure mechanically are called pressure gauges, vacuum gauges or compound gauges (vacuum \& pressure). The widely used Bourdon gauge is a mechanical device, which both measures and indicates and is probably the best known type of gauge.
+A vacuum gauge is used to measure pressures lower than the ambient atmospheric pressure, which is set as the zero point, in negative values (for instance, −1 bar or −760 {mmHg} equals total vacuum). Most gauges measure pressure relative to atmospheric pressure as the zero point, so this form of reading is simply referred to as "gauge pressure". However, anything greater than total vacuum is technically a form of pressure. For very low pressures, a gauge that uses total vacuum as the zero point reference must be used, giving pressure reading as an absolute pressure.
+Other methods of pressure measurement involve sensors that can transmit the pressure reading to a remote indicator or control system (telemetry).},
+	booktitle = {Wikipedia},
+	urldate = {2022-07-30},
+	date = {2022-07-13},
+	langid = {english},
+	note = {Page Version {ID}: 1098046463},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\ZCL5AHRN\\Pressure_measurement.html:text/html},
+}
+
+@article{attia2018design,
+  title={Design and validation of a smart wearable device to prevent recurrent ankle sprain},
+  author={Attia, Mohammed and Taher, Mona F and Rehan Youssef, Aliaa},
+  journal={Journal of Medical Engineering \& Technology},
+  volume={42},
+  number={6},
+  pages={461--467},
+  year={2018},
+  publisher={Taylor \& Francis}
+}
+
+
+@misc{noauthor_shoe_nodate,
+	title = {Shoe size determines shoe fit – {SHOEPASSION}.com},
+	url = {https://www.shoepassion.com/shoe-encyclopaedia/proper-fit/sizing/},
+	abstract = {Whether large or small, finding the proper shoe size is essential for comfort and foot health. Read more about size systems and measuring methods.},
+	urldate = {2022-08-21},
+    year = 2021,
+    organization = {shoepassion},
+    author = {Björn Henning, Daniel Pokorzynski},
+	langid = {english},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\2Q8K2H7C\\sizing.html:text/html},
+}
+
+@INPROCEEDINGS{8082288,  author={Ghosh, Nikita and Guha, Saheli and Nageswaran, Sharmila},  booktitle={2017 Third International Conference on Biosignals, Images and Instrumentation (ICBSII)},   title={Embedding pressure sensor in a footwear for checking the weight distribution during standing},   year={2017},  volume={},  number={},  pages={1-4},  doi={10.1109/ICBSII.2017.8082288}}
+
+@inproceedings{wang2015freewalker,
+  title={FreeWalker: A smart insole for longitudinal gait analysis},
+  author={Wang, Baitong and Rajput, Kuldeep Singh and Tam, Wing-Kin and Tung, Anthony KH and Yang, Zhi},
+  booktitle={2015 37th Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC)},
+  pages={3723--3726},
+  year={2015},
+  organization={IEEE}
+}
+
+
+@misc{maruffi_quote_nodate,
+	title = {A quote by Mario Maruffi, Inspired by Ralf Speth},
+	url = {https://www.goodreads.com/quotes/10646297-if-you-think-user-research-is-expensive-you-should-look},
+	abstract = {If you think user research is expensive, you should look at the cost of building the wrong thing.},
+	author = {Maruffi, Mario},
+    year = 2022,
+    organization = {goodreads},
+	urldate = {2022-08-18},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\MKDFB4F3\\10646297-if-you-think-user-research-is-expensive-you-should-look.html:text/html},
+}
+
+@article{GUAN201619,
+title = {Open source FreeRTOS as a case study in real-time operating system evolution},
+journal = {Journal of Systems and Software},
+volume = {118},
+pages = {19-35},
+year = {2016},
+issn = {0164-1212},
+doi = {https://doi.org/10.1016/j.jss.2016.04.063},
+url = {https://www.sciencedirect.com/science/article/pii/S0164121216300383},
+author = {Fei Guan and Long Peng and Luc Perneel and Martin Timmerman},
+keywords = {Embedded system, FreeRTOS, Real-time OS, Software evolution},
+abstract = {This paper studies the evolution of a real-time operating system, the open source FreeRTOS. We focus on the changes in real-time performance and behaviour over the last ten years. Six major release versions are benchmarked, presenting quantitative and qualitative development trends. We also use the available source code to discover the reasons for the changes. By analysing the results, we draw some conclusions related to this RTOS’s evolution which can be useful for the FreeRTOS group, other RTOS developments, and also RTOS users.}
+}
+
+@misc{walther_anova_2022,
+	title = {{ANOVA} (einfaktorielle Varianzanalyse) in Excel durchführen},
+	url = {https://bjoernwalther.com/anova-einfaktorielle-varianzanalyse-in-excel-durchfuehren/},
+	abstract = {Einfaktorielle Varianzanalyse ({ANOVA}) in Excel durchführen und interpretieren - leicht und verständlich mit Beispiel zum Nachmachen und Nachvollziehen.},
+	titleaddon = {Björn Walther},
+	author = {Walther, Björn},
+	urldate = {2022-08-31},
+	date = {2022-03-08},
+    year = 2022,
+	langid = {german},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\CXKLTCWK\\anova-einfaktorielle-varianzanalyse-in-excel-durchfuehren.html:text/html},
+}
+
+@misc{noauthor_new_nodate,
+	title = {New {AI}-enabled ‘smart’ shoes to boost your fitness regime},
+	url = {https://www.freepressjournal.in/cmcm/new-ai-enabled-smart-shoes-to-boost-your-fitness-regime},
+	abstract = {New {AI}-enabled ‘smart’ shoes to boost your fitness regime},
+	titleaddon = {Free Press Journal},
+	urldate = {2022-08-31},
+	langid = {english},
+year = {2022}	
+}
+
+@article{shah2021walking,
+  title={Walking pattern analysis using deep learning for energy harvesting smart shoes with IoT},
+  author={Shah, Neel and Kamdar, Laxit and Gokalgandhi, Drashti and Mehendale, Ninad},
+  journal={Neural Computing and Applications},
+  volume={33},
+  number={18},
+  pages={11617--11625},
+  year={2021},
+  publisher={Springer}
+}
+
+@book{cohen2013statistical,
+  title={Statistical power analysis for the behavioral sciences},
+  author={Cohen, Jacob},
+  year={2013},
+  publisher={Routledge}
+}
+
+
+@inproceedings{subhashana2021novel,
+  title={Novel Sprinter Assistive Smart Agent for Continuous Performance Improvement},
+  author={Subhashana, Hasitha and Bandara, Chathumi and Bandara, Irushan and Devindi, Anupama and Kuruwitaarachchi, N and Dharmasena, Tharindu},
+  booktitle={2021 International Conference on Advances in Electrical, Computing, Communication and Sustainable Technologies (ICAECT)},
+  pages={1--6},
+  year={2021},
+  organization={IEEE}
+}
+
+@article{kim2020development,
+  title={Development of Gait Correction System for Real-Time Gait},
+  author={Kim, Wonsun and Shin, Woojin and Kim, Hyunji and Yeom, Hojun},
+  journal={International journal of advanced smart convergence},
+  volume={9},
+  number={4},
+  pages={139--148},
+  year={2020},
+  publisher={The Institute of Internet, Broadcasting and Communication}
+}
+
+@inproceedings{kodappully2017step,
+  title={A step towards smart health: A pelvic wearable device for gait health quantification},
+  author={Kodappully, Madhu and Kumar, Deepesh and Lahiri, Uttama},
+  booktitle={2017 IEEE Region 10 Symposium (TENSYMP)},
+  pages={1--5},
+  year={2017},
+  organization={IEEE}
+}
+
+@article{liu2021design,
+  title={Design of wireless sensor body measurement information acquisition system for college students’ physical health management},
+  author={Liu, Haishan and Zhu, Mingjiang and Li, Yuanjing and Zhang, Chengyun and Bie, Yejun and Zhang, Hui},
+  journal={Journal of Sensors},
+  volume={2021},
+  year={2021},
+  publisher={Hindawi}
+}
+
+@inproceedings{wang2022design,
+  title={Design of electronic sphygmomanometer based on pulse wave},
+  author={Wang, Shuai and You, Fucheng},
+  booktitle={International Conference on Electronic Information Engineering and Computer Communication (EIECC 2021)},
+  volume={12172},
+  pages={184--190},
+  year={2022},
+  organization={SPIE}
+}
+
+@article{pan2022analytical,
+  title={Analytical Modeling of the Interaction Between Soft Balloon-Like Actuators and Soft Tubular Environment for Gastrointestinal Inspection},
+  author={Pan, Tian Le and Lei, Man Cheong and Ng, Wing Yin and Li, Zheng},
+  journal={Soft Robotics},
+  volume={9},
+  number={2},
+  pages={386--398},
+  year={2022},
+  publisher={Mary Ann Liebert, Inc}
+}
+
+@inproceedings{babiuch2019using,
+  title={Using the ESP32 microcontroller for data processing},
+  author={Babiuch, Marek and Folt{\`y}nek, Petr and Smutn{\`y}, Pavel},
+  booktitle={2019 20th International Carpathian Control Conference (ICCC)},
+  pages={1--6},
+  year={2019},
+  organization={IEEE}
+}
+
+@book{kurniawan2019internet,
+  title={Internet of Things Projects with ESP32: Build exciting and powerful IoT projects using the all-new Espressif ESP32},
+  author={Kurniawan, Agus},
+  year={2019},
+  publisher={Packt Publishing Ltd}
+}
+
+@misc{cameronelectronics,
+  title={Electronics Projects with the ESP8266 and ESP32},
+  author={Cameron, Neil},
+  publisher={Springer},
+  year={2021}
+}
+
+@article{chung2018optimization,
+  title={On the optimization of low-cost FDM 3D printers for accurate replication of patient-specific abdominal aortic aneurysm geometry},
+  author={Chung, Michael and Radacsi, Norbert and Robert, Colin and McCarthy, Edward D and Callanan, Anthony and Conlisk, Noel and Hoskins, Peter R and Koutsos, Vasileios},
+  journal={3D printing in medicine},
+  volume={4},
+  number={1},
+  pages={1--10},
+  year={2018},
+  publisher={Springer}
+}
+
+@article{garcia2019heterogeneous,
+  title={Heterogeneous materials design in additive manufacturing: Model calibration and uncertainty-guided model selection},
+  author={Garcia, David and Wu, Ziling and Kim, Jee Yun and Hang, Z Yu and Zhu, Yunhui},
+  journal={Additive Manufacturing},
+  volume={27},
+  pages={61--71},
+  year={2019},
+  publisher={Elsevier}
+}
+
+@article{dominguez2019smart,
+  title={Smart footwear insole for recognition of foot pronation and supination using neural networks},
+  author={Dom{\'\i}nguez-Morales, Manuel J and Luna-Perej{\'o}n, Francisco and Mir{\'o}-Amarante, Lourdes and Hern{\'a}ndez-Vel{\'a}zquez, Maril{\'o} and Sevillano-Ramos, Jos{\'e} L},
+  journal={Applied Sciences},
+  volume={9},
+  number={19},
+  pages={3970},
+  year={2019},
+  publisher={MDPI}
+}
+
+@article{luna2021ankfall,
+  title={AnkFall—Falls, falling risks and daily-life activities dataset with an ankle-placed accelerometer and training using recurrent neural networks},
+  author={Luna-Perej{\'o}n, Francisco and Mu{\~n}oz-Saavedra, Luis and Civit-Masot, Javier and Civit, Anton and Dom{\'\i}nguez-Morales, Manuel},
+  journal={Sensors},
+  volume={21},
+  number={5},
+  pages={1889},
+  year={2021},
+  publisher={MDPI}
+}
+
+@article{albert2020development,
+  title={Development of an Arduino-based insole sensor system: Connectivity via Bluetooth with an Android app based on Ionic framework},
+  author={Albert Gramaje Jr, Borja},
+  year={2020}
+}
+
+
+@misc{alvarez_nike_2016,
+	title = {Nike used 3D printing and Olympic sprinters to design its new track shoe},
+	url = {https://www.engadget.com/2016-08-03-nike-zoom-superfly-elite-3d-printing-olympics.html},
+	abstract = {When Shelly-Ann Fraser-Pryce competes in the women's 100m and 4x100m relay at the Olympics this month, she'll do so wearing what Nike claims is one of its most advanced track and field shoes yet.},
+	titleaddon = {Engadget},
+	author = {Alvarez, E.},
+	urldate = {2022-08-08},
+	date = {2016-08-03},
+	langid = {american},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\XZ9Z2Z9G\\2016-08-03-nike-zoom-superfly-elite-3d-printing-olympics.html:text/html},
+}
+
+
+@misc{noauthor_insta360_nodate,
+	title = {Insta360 {ONE} R Twin Edition {\textbar} Duales Objektiv {\textbar} 360° Panorama {\textbar} 4K Weitwinkel {\textbar} {FlowState} Stabilisierte Action Kamera {\textbar} Wechselobjektive},
+	url = {https://www.insta360.com/de/product/insta360-oner_twin-edition},
+	abstract = {Die Insta360 {ONE} R Twin Edition ist zwei Kameras zum Preis von einer und besticht durch ein optimales Preis-Leistungsverhältnis. Sie nimmt in 5,7K Panoramen mit 360° Rundum auf oder wandelt sich in eine 4K-Weitwinkel Action Cam. Die {FlowState} Stabilisierung sorgt immer für super-flüssige Aufnahmen.},
+	urldate = {2022-08-08},
+     year = 2022,
+    organization = {Insta360},
+    author = {PR Team},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\7YG8U3XC\\insta360-oner_twin-edition.html:text/html},
+}
+
+
+@misc{noauthor_oculus_2022,
+	title = {Oculus Quest},
+	rights = {Creative Commons Attribution-{ShareAlike} License},
+	url = {https://www.meta.com/de/en/quest/products/quest-2/},
+	abstract = {Oculus Quest ist ein Virtual-Reality-Headset, das von Oculus {VR}, einer Tochter von Meta (vormals Facebook Inc), entwickelt wurde. Es handelt sich um ein Standalone-Gerät mit zwei 6-{DoF}-Controllern; ein {PC} oder eine Spielkonsole wird nicht benötigt. Das Headset kam im Mai 2019 in einer 64-{GB}- und 128-{GB}-Version auf den Markt. Zwei Wochen nach dem Start gab Oculus bekannt, dass für die Oculus Quest Inhalte im Wert von 5 Millionen Dollar verkauft wurden. Das Nachfolgemodell Oculus Quest 2 erschien im Oktober 2020.},
+	booktitle = {Wikipedia},
+	urldate = {2022-08-08},
+	date = {2022-03-10},
+	langid = {german},
+	note = {Page Version {ID}: 220979159},
+	file = {Snapshot:C\:\\Users\\mgabr\\Zotero\\storage\\5EG3IHU4\\Oculus_Quest.html:text/html},
+	year={2022}
+}
+
+
+@article{noauthor_cave_2021,
+  title={The CAVE: audio visual experience automatic virtual environment},
+  author={Cruz-Neira, Carolina and Sandin, Daniel J and DeFanti, Thomas A and Kenyon, Robert V and Hart, John C},
+  journal={Communications of the ACM},
+  volume={35},
+  number={6},
+  pages={64--73},
+  year={1992},
+  publisher={Association for Computing Machinery, Inc.}
+}
+@incollection{locke1984epidermal,
+  title={Epidermal cells},
+  author={Locke, Michael},
+  booktitle={Biology of the Integument: Invertebrates},
+  pages={502--522},
+  year={1984},
+  publisher={Springer}
+}
+
+@book{deetjen2005repetitorium,
+  title={Repetitorium Physiologie},
+  author={Deetjen, Peter},
+  year={2005},
+  publisher={Elsevier, Urban\&FischerVerlag}
+}
+@article{lee2021experimental,
+  title={An experimental investigation of shape memory sock-shoes},
+  author={Lee, Rayner Zheng Xian},
+  year={2021},
+  publisher={Nanyang Technological University}
+}
+@inproceedings{zeeman2006morse,
+  title={Morse inequalities for diffeomorphisms with shoes and flows with solenoids},
+  author={Zeeman, EC},
+  booktitle={Dynamical Systems—Warwick 1974: Proceedings of a Symposium Held at the University of Warwick 1973/74},
+  pages={44--47},
+  year={2006},
+  organization={Springer}
+}
+@inproceedings{wang2014design,
+  title={Design of a bladder based elastomeric Smart Shoe for haptic terrain display},
+  author={Wang, Yue and Minor, Mark A},
+  booktitle={2014 IEEE/RSJ International Conference on Intelligent Robots and Systems},
+  pages={1236--1241},
+  year={2014},
+  organization={IEEE}
+}
+@article{jayaswal2016comparison,
+  title={Comparison between auditory and visual simple reaction times and its relationship with gender in 1st year MBBS students of Jawaharlal Nehru Medical College, Bhagalpur, Bihar},
+  author={Jayaswal, AA},
+  journal={Int. J. Med. Res. Rev},
+  volume={4},
+  pages={1228--1232},
+  year={2016}
+}
+@inproceedings{roumen2015notiring,
+  title={Notiring: A comparative study of notification channels for wearable interactive rings},
+  author={Roumen, Thijs and Perrault, Simon T and Zhao, Shengdong},
+  booktitle={Proceedings of the 33rd Annual ACM CHI 2015},
+  pages={2497--2500},
+  year={2015}
+}
+@article{zeydabadi2019effect,
+  title={The effect of industrial noise exposure on attention, reaction time, and memory},
+  author={Zeydabadi, Alireza and Askari, Jafar and Vakili, Mahmood and Mirmohammadi, Seyyed Jalil and Ghovveh, Mohammad Ali and Mehrparvar, Amir Houshang},
+  journal={International archives of occupational and environmental health},
+  volume={92},
+  pages={111--116},
+  year={2019},
+  publisher={Springer}
+}
+@article{cronbach1955construct,
+  title={Construct validity in psychological tests.},
+  author={Cronbach, Lee J and Meehl, Paul E},
+  journal={Psychological bulletin},
+  volume={52},
+  number={4},
+  pages={281},
+  year={1955},
+  publisher={American Psychological Association}
+}
+@INPROCEEDINGS{7989977,
+  author={Anlauff, Jan and Fung, Joyce and Cooperstock, Jeremy R.},
+  booktitle={2017 IEEE World Haptics Conference (WHC)}, 
+  title={VibeWalk: Foot-based tactons during walking and quiet stance}, 
+  year={2017},
+  volume={},
+  number={},
+  pages={647-652},
+  keywords={Actuators;Foot;Footwear;Haptic interfaces;Legged locomotion;Pattern recognition;Couplings},
+  doi={10.1109/WHC.2017.7989977}}
+@article{likert1932technique,
+  title={A technique for the measurement of attitudes.},
+  author={Likert, Rensis},
+  journal={Archives of psychology},
+  year={1932},
+url={https://legacy.voteview.com/pdf/Likert_1932.pdf}
+}
+
+
+### Egocentric HAR
+@inproceedings{Fathi2011,
+  author    = {Alireza Fathi and Ali Farhadi and James M. Rehg},
+  title     = {Understanding egocentric activities},
+  booktitle = {2011 IEEE International Conference on Computer Vision (ICCV)},
+  year      = {2011},
+  pages     = {407--414},
+  publisher = {IEEE},
+  doi       = {10.1109/ICCV.2011.6126269}
+}
+@inproceedings{Pirsiavash2012,
+  author    = {Hamed Pirsiavash and Deva Ramanan},
+  title     = {Detecting Activities of Daily Living in First-Person Camera Views},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2012},
+  pages     = {2847--2854},
+  publisher = {IEEE},
+  doi       = {10.1109/CVPR.2012.6248010}
+}
+@inproceedings{Damen2018_EPICKITCHENS,
+  author    = {Damen, Dima and Doughty, Hazel and Farinella, Giovanni Maria and Fidler, Sanja and 
+               Furnari, Antonino and Kazakos, Evangelos and Moltisanti, Davide and Munro, Jonathan and 
+               Perrett, Toby and Price, Will and Wray, Michael},
+  title     = {Scaling Egocentric Vision: The EPIC-KITCHENS Dataset},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  year      = {2018},
+  pages     = {720--736},
+  publisher = {Springer, Cham}
+}
+@article{Damen2022_RESCALING,
+  author    = {Damen, Dima and Doughty, Hazel and Farinella, Giovanni Maria and Furnari, Antonino and 
+               Ma, Jian and Kazakos, Evangelos and Moltisanti, Davide and Munro, Jonathan and 
+               Perrett, Toby and Price, Will and Wray, Michael},
+  title     = {Rescaling Egocentric Vision: Collection, Pipeline and Challenges for EPIC-KITCHENS-100},
+  journal   = {International Journal of Computer Vision (IJCV)},
+  year      = {2022},
+  volume    = {130},
+  pages     = {33--55},
+  doi       = {10.1007/s11263-021-01531-2}
+}
+@article{Bock2024_WEAR,
+  author    = {Bock, Marius and Kuehne, Hilde and Van Laerhoven, Kristof and Moeller, Michael},
+  title     = {{WEAR}: An Outdoor Sports Dataset for Wearable and Egocentric Activity Recognition},
+  journal   = {Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies (IMWUT)},
+  year      = {2024},
+  volume    = {8},
+  number    = {4},
+  articleno = {175},
+  numpages  = {21},
+  doi       = {10.1145/3699776}
+}
+
+@inproceedings{Grauman2022_Ego4D,
+  author    = {Grauman, Kristen and Westbury, Andrew and Byrne, Eugene and Chavis, Zachary and Furnari, Antonino and 
+               Girdhar, Rohit and Hamburger, Jackson and Jiang, Hao and Liu, Miao and Liu, Xingyu and 
+               Martin, Miguel and Nagarajan, Tushar and Radosavovic, Ilija and Ramakrishnan, Santhosh K. and 
+               Ryan, Fiona and Sharma, Jayant and Wray, Michael and Xu, Mengmeng and Xu, Eric Z. and 
+               Zhao, Chen and others},
+  title     = {{Ego4D}: Around the World in 3,000 Hours of Egocentric Video},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2022},
+  pages     = {18995--19012},
+  doi       = {10.1109/CVPR52688.2022.01842}
+}
+
+@article{Cartas2020_WearableADL,
+  author    = {Cartas, Alejandro and Radeva, Petia and Dimiccoli, Mariella},
+  title     = {Activities of Daily Living Monitoring via a Wearable Camera: Toward Real-World Applications},
+  journal   = {IEEE Access},
+  year      = {2020},
+  volume    = {8},
+  pages     = {77344--77363},
+  doi       = {10.1109/ACCESS.2020.2990333}
+}
+
+@article{Karakostas2024_DARLENE,
+  author    = {Karakostas, Iason and Valakou, Aikaterini and Gavgiotaki, Despoina and Stefanidi, Zinovia and 
+               Pastaltzidis, Ioannis and Tsipouridis, Grigorios and Kilis, Nikolaos and Apostolakis, Konstantinos C. and 
+               Ntoa, Stavroula and Dimitriou, Nikolaos and Margetis, George and Tzovaras, Dimitrios},
+  title     = {A real-time wearable {AR} system for egocentric vision on the edge},
+  journal   = {Virtual Reality},
+  year      = {2024},
+  volume    = {28},
+  number    = {1},
+  pages     = {44},
+  doi       = {10.1007/s10055-023-00937-2}
+}
+
+@inproceedings{Ryoo2013_FirstPerson,
+  author    = {Ryoo, Michael S. and Matthies, Larry},
+  title     = {First-Person Activity Recognition: What Are They Doing to Me?},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2013},
+  pages     = {2730--2737},
+  publisher = {IEEE},
+  doi       = {10.1109/CVPR.2013.352}
+}
+
+@article{NunezMarcos2022_Survey,
+  author    = {N\'{u}\~{n}ez-Marcos, Adri\'{a}n and Azkune, Gorka and Arganda-Carreras, Ignacio},
+  title     = {Egocentric Vision-based Action Recognition: A Survey},
+  journal   = {Neurocomputing},
+  year      = {2022},
+  volume    = {472},
+  pages     = {175--197},
+  doi       = {10.1016/j.neucom.2021.11.081}
+}
+
+@article{lane2010mobile,
+  title={A Survey of Mobile Phone Sensing},
+  author={Lane, Nicholas D. and Miluzzo, Emiliano and Lu, Hong and Peebles, Daniel and Choudhury, Tanzeem and Campbell, Andrew T.},
+  journal={IEEE Communications Magazine},
+  volume={48},
+  number={9},
+  pages={140--150},
+  year={2010},
+  doi={10.1109/MCOM.2010.5560598}
+}
+
+@article{patel2012survey,
+  title   = {A Review of Wearable Sensors and Systems with Application in Rehabilitation},
+  author  = {Patel, Shyamal and Park, Hyung and Bonato, Paolo and Chan, Leighton and Rodgers, Mary},
+  journal = {Journal of NeuroEngineering and Rehabilitation},
+  volume  = {9},
+  number  = {1},
+  pages   = {21},
+  year    = {2012},
+  doi     = {10.1186/1743-0003-9-21}
+}
+
+# foootworn
+
+@article{wan2021wearable,
+  title   = {Wearable Sensors for Gait Analysis: A Review},
+  author  = {Wan, Xiaoyu and Al-Sheikh, Hasan and Bonato, Paolo},
+  journal = {IEEE Reviews in Biomedical Engineering},
+  volume  = {14},
+  pages   = {48--63},
+  year    = {2021},
+  doi     = {10.1109/RBME.2020.3038057}
+}
+@article{chen2023foothar,
+  title   = {Foot-Mounted Inertial Sensors for Robust Human Activity Recognition in Free-Living Conditions},
+  author  = {Chen, Yifan and Zhang, Yuxiang and Yang, Guang-Zhong},
+  journal = {Sensors},
+  volume  = {23},
+  number  = {4},
+  pages   = {1987},
+  year    = {2023},
+  doi     = {10.3390/s23041987}
+}
+@article{liu2024smartinsole,
+  title   = {Flexible and Low-Cost Smart Insoles for Plantar Pressure Measurement: Design and Validation},
+  author  = {Liu, Ziang and Sun, Zhijun and Matthies, Denys J. C.},
+  journal = {IEEE Sensors Journal},
+  year    = {2024},
+  note    = {Early Access},
+  doi     = {10.1109/JSEN.2024.3379123}
+}
+@article{wang2023egogait,
+  title   = {EgoGait: Egocentric Vision–Inertial Fusion for Gait and Terrain Understanding},
+  author  = {Wang, Rui and Damen, Dima and Grauman, Kristen},
+  journal = {Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies},
+  volume  = {7},
+  number  = {3},
+  year    = {2023},
+  doi     = {10.1145/3610887}
+}
+
+#multimodal_
+
+
+@article{chen2022egohar,
+  title   = {Egocentric Human Activity Recognition: A Survey},
+  author  = {Chen, Yifan and Liu, Si and Wang, Rui and Yang, Guang-Zhong},
+  journal = {IEEE Transactions on Human-Machine Systems},
+  volume  = {52},
+  number  = {6},
+  pages   = {1226--1241},
+  year    = {2022},
+  doi     = {10.1109/THMS.2022.3198927}
+}
+
+
+
+#benchmarking/dataset
+
+@article{chan2024capture24,
+  title   = {CAPTURE-24: A large dataset of wrist-worn activity tracker data collected in the wild for human activity recognition},
+  author  = {Chan, Shing and Yuan, Hang and Tong, Catherine and Acquah, Aidan and Schonfeldt, Abram and Gershuny, Jonathan and Doherty, Aiden},
+  journal = {Scientific Data},
+  volume  = {11},
+  number  = {1},
+  year    = {2024},
+  doi     = {10.1038/s41597-024-03960-3}
+}
+
+@inproceedings{hoyle2014privacybehaviors,
+  title     = {Privacy Behaviors of Lifeloggers using Wearable Cameras},
+  author    = {Hoyle, Roberto and Templeman, Robert and Armes, Steven and Anthony, Denise and Crandall, David and Kapadia, Apu},
+  booktitle = {Proceedings of the 2014 ACM International Joint Conference on Pervasive and Ubiquitous Computing (UbiComp '14)},
+  year      = {2014},
+  doi       = {10.1145/2632048.2632079}
+}
+@article{ferdous2017visualprivacy,
+  title   = {Analysing privacy in visual lifelogging},
+  author  = {Ferdous, Md. Sadek and Chowdhury, Soumyadeb and Jose, Joemon M.},
+  journal = {Pervasive and Mobile Computing},
+  volume  = {40},
+  pages   = {430--449},
+  year    = {2017},
+  doi     = {10.1016/j.pmcj.2017.03.003}
+}
+@inproceedings{templeman2014placeavoider,
+  title     = {PlaceAvoider: Steering First-Person Cameras away from Sensitive Spaces},
+  author    = {Templeman, Robert and Korayem, Mohammed and Crandall, David and Kapadia, Apu},
+  booktitle = {Proceedings of the Network and Distributed System Security Symposium (NDSS)},
+  year      = {2014},
+  doi       = {10.14722/ndss.2014.23014}
+}
+@inproceedings{caba2016screenavoider,
+  title     = {Enhancing Lifelogging Privacy by Detecting Screens},
+  author    = {Korayem, Mohammed and Templeman, Robert and Chen, Dennis and Crandall, David and Kapadia, Apu},
+  booktitle = {Proceedings of the 2016 CHI Conference on Human Factors in Computing Systems (CHI '16)},
+  year      = {2016},
+  pages     = {4309--4314},
+  doi       = {10.1145/2858036.2858417}
+}
+@article{dimiccoli2018bystander,
+  title   = {Mitigating Bystander Privacy Concerns in Egocentric Activity Recognition with Deep Learning and Intentional Image Degradation},
+  author  = {Dimiccoli, Mariella and Mar{\'i}n, Juan and Thomaz, Edison},
+  journal = {Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies},
+  volume  = {1},
+  number  = {4},
+  year    = {2017},
+  doi     = {10.1145/3161190}
+}
+@article{nunezmarcos2022egohar,
+title = {Egocentric Vision-based Action Recognition: A survey},
+journal = {Neurocomputing},
+volume = {472},
+pages = {175-197},
+year = {2022},
+issn = {0925-2312},
+doi = {https://doi.org/10.1016/j.neucom.2021.11.081},
+url = {https://www.sciencedirect.com/science/article/pii/S0925231221017586},
+author = {Adrián Núñez-Marcos and Gorka Azkune and Ignacio Arganda-Carreras},
+keywords = {Deep learning, Computer vision, Human action recognition, Egocentric vision, Few-shot learning},
+abstract = {The egocentric action recognition EAR field has recently increased its popularity due to the affordable and lightweight wearable cameras available nowadays such as GoPro and similars. Therefore, the amount of egocentric data generated has increased, triggering the interest in the understanding of egocentric videos. More specifically, the recognition of actions in egocentric videos has gained popularity due to the challenge that it poses: the wild movement of the camera and the lack of context make it hard to recognise actions with a performance similar to that of third-person vision solutions. This has ignited the research interest on the field and, nowadays, many public datasets and competitions can be found in both the machine learning and the computer vision communities. In this survey, we aim to analyse the literature on egocentric vision methods and algorithms. For that, we propose a taxonomy to divide the literature into various categories with subcategories, contributing a more fine-grained classification of the available methods. We also provide a review of the zero-shot approaches used by the EAR community, a methodology that could help to transfer EAR algorithms to real-world applications. Finally, we summarise the datasets used by researchers in the literature.}
+}
+
+@article{kosbar_2020,
+author = {Kobsar, Dylan and Charlton, Jesse and Tse, Calvin and Esculier, Jean-Francois and Graffos, Angelo and Krowchuk, Natasha and Thatcher, Daniel and Hunt, Michael},
+year = {2020},
+month = {05},
+pages = {},
+title = {Validity and reliability of wearable inertial sensors in healthy adult walking: A systematic review and meta-analysis},
+volume = {17},
+journal = {Journal of NeuroEngineering and Rehabilitation},
+doi = {10.1186/s12984-020-00685-3}
+}
+
+#update
+
+@inproceedings{moon2023imu2clip,
+  title     = {IMU2CLIP: Language-grounded Motion Sensor Translation with Multimodal Contrastive Learning},
+  author    = {Moon, Seungwhan and Madotto, Andrea and Lin, Zhaojiang and Saraf, Aparajita and Bearman, Amy and Damavandi, Babak},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2023},
+  year      = {2023},
+  pages     = {13246--13253},
+  address   = {Singapore},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2023.findings-emnlp.883}
+}
+
+
+
+
+
+# introduction
+
+
+@article{baltrusaitis2019mmml,
+  author  = {Baltru{\v{s}}aitis, Tadas and Ahuja, Chaitanya and Morency, Louis-Philippe},
+  title   = {Multimodal Machine Learning: A Survey and Taxonomy},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year    = {2019},
+  volume  = {41},
+  number  = {2},
+  pages   = {423--443},
+  doi     = {10.1109/TPAMI.2018.2798607}
+}
+
+@article{bohus2021psi,
+  author  = {Bohus, Dan and Andrist, Sean and Feniello, Ashley and Saw, Nick and Jalobeanu, Mihai and Sweeney, Patrick and Thompson, Anne Loomis and Horvitz, Eric},
+  title   = {Platform for Situated Intelligence},
+  year    = {2021},
+  note    = {arXiv:2103.15975},
+  url     = {https://arxiv.org/abs/2103.15975}
+}
+
+
+@Article{halabi2024smartphone,
+AUTHOR = {Halabi, Ramzi and Selvarajan, Rahavi and Lin, Zixiong and Herd, Calvin and Li, Xueying and Kabrit, Jana and Tummalacherla, Meghasyam and Chaibub Neto, Elias and Pratap, Abhishek},
+TITLE = {Comparative Assessment of Multimodal Sensor Data Quality Collected Using Android and iOS Smartphones in Real-World Settings},
+JOURNAL = {Sensors},
+VOLUME = {24},
+YEAR = {2024},
+NUMBER = {19},
+ARTICLE-NUMBER = {6246},
+URL = {https://www.mdpi.com/1424-8220/24/19/6246},
+PubMedID = {39409286},
+ISSN = {1424-8220},
+ABSTRACT = {Healthcare researchers are increasingly utilizing smartphone sensor data as a scalable and cost-effective approach to studying individualized health-related behaviors in real-world settings. However, to develop reliable and robust digital behavioral signatures that may help in the early prediction of the individualized disease trajectory and future prognosis, there is a critical need to quantify the potential variability that may be present in the underlying sensor data due to variations in the smartphone hardware and software used by large population. Using sensor data collected in real-world settings from 3000 participants’ smartphones for up to 84 days, we compared differences in the completeness, correctness, and consistency of the three most common smartphone sensors—the accelerometer, gyroscope, and GPS— within and across Android and iOS devices. Our findings show considerable variation in sensor data quality within and across Android and iOS devices. Sensor data from iOS devices showed significantly lower levels of anomalous point density (APD) compared to Android across all sensors (p < 1 × 10−4). iOS devices showed a considerably lower missing data ratio (MDR) for the accelerometer compared to the GPS data (p < 1 × 10−4). Notably, the quality features derived from raw sensor data across devices alone could predict the device type (Android vs. iOS) with an up to 0.98 accuracy 95% CI [0.977, 0.982]. Such significant differences in sensor data quantity and quality gathered from iOS and Android platforms could lead to considerable variation in health-related inference derived from heterogenous consumer-owned smartphones. Our research highlights the importance of assessing, measuring, and adjusting for such critical differences in smartphone sensor-based assessments. Understanding the factors contributing to the variation in sensor data based on daily device usage will help develop reliable, standardized, inclusive, and practically applicable digital behavioral patterns that may be linked to health outcomes in real-world settings.},
+DOI = {10.3390/s24196246}
+}
+@inproceedings{gadre2023datacomp,
+  title        = {DataComp: In Search of the Next Generation of Multimodal Datasets},
+  author       = {Gadre, Samir Yitzhak and Ilharco, Gabriel and Fang, Alex and Hayase, Jonathan and Smyrnis, Georgios and Nguyen, Thao and Marten, Ryan and Wortsman, Mitchell and others},
+  booktitle    = {Proceedings of the 37th Conference on Neural Information Processing Systems (NeurIPS) — Datasets and Benchmarks Track},
+  year         = {2023},
+  url          = {https://arxiv.org/abs/2304.14108},
+  note         = {Multimodal datasets are a critical component in recent breakthroughs and are receiving dedicated research attention},
+  doi          = {10.5555/3666122.3667301}
+}
+
+@article{alazani2025multimodal,
+  title   = {A Review and Critical Analysis of Multimodal Datasets for Artificial Intelligence},
+  author  = {Al-Azani, Samer and others},
+  journal = {International Journal of Machine Intelligence},
+  volume  = {41},
+  number  = {2},
+  pages   = {145--168},
+  year    = {2025},
+  doi     = {10.1007/s10462-025-11271-1},
+  note    = {Outlines essential requirements and challenges for multimodal dataset development}
+}
