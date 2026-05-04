@@ -109,18 +109,30 @@
 
   let currentPkt = null;
 
+  function photoLabel(pkt, which) {
+    const ts = which === 'mid' ? pkt.midTs : pkt.endTs;
+    const fallback = which === 'mid' ? '~250' : '~750';
+    return `${which}  ${ts != null ? ts : fallback} ms`;
+  }
+
   function showMidPhoto(pkt) {
     const url = pkt.midImgUrl || pkt.imgUrl || null;
     if (url) cameraImg.src = url;
     else cameraImg.removeAttribute('src');
-    cameraLabel.textContent = pkt.midImgUrl ? 'mid  ≈500 ms' : 'end  ≈1000 ms+';
+    cameraLabel.textContent = pkt.midImgUrl ? photoLabel(pkt, 'mid') : photoLabel(pkt, 'end');
   }
 
   function showEndPhoto(pkt) {
     const url = pkt.imgUrl || pkt.midImgUrl || null;
     if (url) cameraImg.src = url;
     else cameraImg.removeAttribute('src');
-    cameraLabel.textContent = pkt.imgUrl ? 'end  ≈1000 ms+' : 'mid  ≈500 ms';
+    cameraLabel.textContent = pkt.imgUrl ? photoLabel(pkt, 'end') : photoLabel(pkt, 'mid');
+  }
+
+  function photoSwitchThreshold(pkt) {
+    const mid = pkt.midTs ?? 250;
+    const end = pkt.endTs ?? 750;
+    return (mid + end) / 2;
   }
 
   // Init components
@@ -168,9 +180,10 @@
       onTofFrame: (frame, frameIdx) => {
         TofView.updateFrame(frame);
         if (currentPkt) {
-          const tMs = (frame && frame.t != null) ? frame.t : 0;
-          if (tMs < 500) showMidPhoto(currentPkt);
-          else           showEndPhoto(currentPkt);
+          const tMs       = (frame && frame.t != null) ? frame.t : 0;
+          const threshold = photoSwitchThreshold(currentPkt);
+          if (tMs < threshold) showMidPhoto(currentPkt);
+          else                 showEndPhoto(currentPkt);
         }
       }
     });

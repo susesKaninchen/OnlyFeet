@@ -52,12 +52,14 @@ const DataLoader = (() => {
     // Parse JSON files and build packets
     const packets = [];
     for (const idx of sortedIndices) {
-      const pkt = { index: idx, ts: 0, json: null, imgUrl: null, midImgUrl: null, wavUrl: null, wavFile: null };
+      const pkt = { index: idx, ts: 0, json: null, imgUrl: null, midImgUrl: null, wavUrl: null, wavFile: null, midTs: null, endTs: null };
 
       if (pktJsons[idx]) {
         const text = await pktJsons[idx].text();
         pkt.json = JSON.parse(text);
-        pkt.ts = pkt.json.ts;
+        pkt.ts    = pkt.json.ts;
+        pkt.midTs = pkt.json.midTs ?? null;
+        pkt.endTs = pkt.json.endTs ?? null;
       }
 
       if (pktImgs[idx]) {
