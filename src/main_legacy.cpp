@@ -387,7 +387,7 @@ void setupTOF() {
   if (tof.init()) {
     tof.setDistanceMode(VL53L1X::Long);
     tof.setMeasurementTimingBudget(50000);
-    tof.startContinuous(0);
+    tof.startContinuous(55); // period_ms must be >= timing budget (50 ms)
     hasTOF = true;
     Serial.println("OK. VL53L1X ready (continuous, long mode)");
   } else {
@@ -626,7 +626,7 @@ void writerTask(void* arg) {
 
     const uint32_t bucket = pkt.idx / PACKETS_PER_BUCKET;
     if (bucket != currentBucket) {
-      snprintf(bucketDir, sizeof(bucketDir), "%s/%03lu", dataDir, (unsigned long)bucket);
+      snprintf(bucketDir, sizeof(bucketDir), "%s/%04lu", dataDir, (unsigned long)bucket);
       if (!SD.exists(bucketDir)) {
         for (int attempt = 0; ; attempt++) {
           if (SD.mkdir(bucketDir)) break;
