@@ -1,5 +1,5 @@
 // main_legacy.cpp — Legacy-Hardware-Variante: ICM20948 via I2C, VL53L1X Einzelpunkt-ToF
-// Gleiche FreeRTOS-Architektur wie main.cpp, aber mit älterer Sensor-Bestückung.
+// Optionaler WiFi-Web-Server-Modus: während Boot-Delay nach bekanntem Hotspot suchen.
 #include <Arduino.h>
 #include <Wire.h>
 #include <ICM20948_WE.h>
@@ -7,18 +7,21 @@
 #include <ArduinoJson.h>
 
 #include "esp_camera.h"
-#include "camera_pins.h"   // XIAO Sense cam pins (CAMERA_MODEL_XIAO_ESP32S3)
+#include "camera_pins.h"
 
 #include "ESP_I2S.h"
-
 I2SClass I2S;
 #include "FS.h"
 #include "SD.h"
+#include "LittleFS.h"
+#include <WiFi.h>
+#include <WebServer.h>
 
 // FreeRTOS
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #define LOG_VERBOSE 0
 #if LOG_VERBOSE
@@ -28,6 +31,12 @@ I2SClass I2S;
   #define LOGV(...)    ((void)0)
   #define LOGV_LN(s)   ((void)0)
 #endif
+
+/********* WiFi credentials *********/
+#define WIFI_SSID_DEFAULT "MeinHotspot"
+#define WIFI_PASS_DEFAULT "MeinPasswort"
+static char gWifiSSID[64] = WIFI_SSID_DEFAULT;
+static char gWifiPass[64] = WIFI_PASS_DEFAULT;
 
 /********* Audio / SD configuration *********/
 static constexpr int MIC_DATA_PIN = 42;
@@ -51,7 +60,7 @@ static camera_config_t cfg = {
   .pin_d2       = Y4_GPIO_NUM,   .pin_d1       = Y3_GPIO_NUM,
   .pin_d0       = Y2_GPIO_NUM,   .pin_vsync    = VSYNC_GPIO_NUM,
   .pin_href     = HREF_GPIO_NUM, .pin_pclk     = PCLK_GPIO_NUM,
-  .xclk_freq_hz = 24000000,      .ledc_timer   = LEDC_TIMER_0,
+  .xclk_freq_hz = 20000000,      .ledc_timer   = LEDC_TIMER_0,
   .ledc_channel = LEDC_CHANNEL_0,
   .pixel_format = PIXFORMAT_JPEG, .frame_size   = FRAMESIZE_QVGA,
   .jpeg_quality = 30, .fb_count     = 2,
@@ -67,7 +76,7 @@ VL53L1X     tof;
 constexpr uint32_t PACKET_INTERVAL_MS = 1000;
 constexpr size_t   MAX_FIFO_SETS      = 120;
 constexpr size_t   MAX_TOF_READINGS   = 16;
-constexpr uint8_t  TOF_ZONES          = 1;   // VL53L1X: Einzelpunkt
+constexpr uint8_t  TOF_ZONES          = 1;
 constexpr uint32_t PACKETS_PER_BUCKET = 30;
 constexpr size_t   MAX_ERRORS    = 8;
 constexpr size_t   MAX_ERROR_LEN = 64;
@@ -89,16 +98,54 @@ static constexpr uint32_t TOF_STACK_SIZE       = 4096;
 static constexpr uint32_t AUDIO_STACK_SIZE     = 6144;
 static constexpr uint32_t MID_PHOTO_STACK_SIZE = 6144;
 static constexpr uint32_t END_PHOTO_STACK_SIZE = 6144;
+static constexpr uint32_t WEB_STACK_SIZE       = 12288;
 
 static constexpr UBaseType_t AUDIO_PRIORITY      = 5;
 static constexpr UBaseType_t SAMPLER_PRIORITY    = 4;
-static constexpr UBaseType_t WRITER_PRIORITY     = 3;
-static constexpr UBaseType_t TOF_PRIORITY        = 3;
 static constexpr UBaseType_t MID_PHOTO_PRIORITY  = 4;
 static constexpr UBaseType_t END_PHOTO_PRIORITY  = 4;
+static constexpr UBaseType_t WRITER_PRIORITY     = 3;
+static constexpr UBaseType_t TOF_PRIORITY        = 3;
+static constexpr UBaseType_t WEB_PRIORITY        = 2;
+
+/********* System Log *********/
+struct LogEntry { uint32_t ts_ms; char msg[80]; };
+static LogEntry gLog[20];
+static uint8_t  gLogCount = 0;
+
+void sysLog(const char* msg) {
+  Serial.println(msg);
+  if (gLogCount < 20) {
+    gLog[gLogCount].ts_ms = millis();
+    strncpy(gLog[gLogCount].msg, msg, 79);
+    gLog[gLogCount].msg[79] = '\0';
+    gLogCount++;
+  }
+}
+
+/********* Init flags *********/
+static bool gInitSD     = false;
+static bool gInitCamera = false;
+static bool gInitAudio  = false;
+static bool gInitIMU    = false;
 
 bool hasMag = false;
 bool hasTOF = false;
+
+/********* Shared web state *********/
+struct WebStatus {
+  float ax, ay, az, gx, gy, gz;
+  float mag_x, mag_y, mag_z;
+  int16_t tof_mm;
+  uint8_t tof_status;
+  bool tof_valid;
+  uint32_t uptime_ms;
+  uint32_t packet_count;
+};
+static WebStatus gWebStatus = {};
+static volatile bool gRecording = false;
+static volatile bool gWifiMode  = false;
+static SemaphoreHandle_t gSdMutex = nullptr;
 
 static volatile uint32_t gMidPhotoWindowStartMs = 0;
 static volatile uint32_t gEndPhotoWindowStartMs = 0;
@@ -146,60 +193,115 @@ struct Packet {
 void setupIMU();
 void setupTOF();
 void setupAudio();
+void loadWifiConfig();
 void audioTask(void* arg);
 void tofTask(void* arg);
 void samplerTask(void* arg);
 void writerTask(void* arg);
+void webTask(void* arg);
 void buildJson(const Packet& pkt, JsonDocument& doc);
 void midPhotoTask(void* arg);
 void endPhotoTask(void* arg);
 
+/********* CRC-32 for ZIP *********/
+static uint32_t crc32_update(uint32_t crc, const uint8_t* buf, size_t len) {
+  crc ^= 0xFFFFFFFFu;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= buf[i];
+    for (int j = 0; j < 8; j++)
+      crc = (crc >> 1) ^ (0xEDB88320u & (uint32_t)(-(int32_t)(crc & 1)));
+  }
+  return crc ^ 0xFFFFFFFFu;
+}
+
 /********* Arduino setup *********/
 void setup() {
-  delay(8000);
+  delay(1000); // USB CDC enumeration
   Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000);
-  Serial.println("Booting (legacy hardware: I2C IMU + VL53L1X) …");
+  sysLog("Booting (legacy hardware: I2C IMU + VL53L1X) ...");
 
   setupIMU();
   setupTOF();
   setupAudio();
 
   if (esp_camera_init(&cfg) == ESP_OK) {
-    Serial.println("OK. Camera init done");
+    gInitCamera = true;
+    sysLog("OK. Camera init done");
   } else {
-    Serial.println("ERR Camera init failed");
+    sysLog("ERR Camera init failed");
     while(1);
   }
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 15; i++) {
     camera_fb_t* fb = esp_camera_fb_get();
     if (fb) esp_camera_fb_return(fb);
-  }
-  Serial.println("OK. Camera warm-up done");
-
-  Serial.println("Mounting SD …");
-  if (!SD.begin(SD_CS_PIN, SPI, 40000000)) {
-    Serial.println("ERR SD mount failed");
-    while(1);
-  }
-  Serial.printf("OK. SD ready (SPI @ 40 MHz, card size %llu MB)\n",
-                SD.cardSize() / (1024ULL * 1024ULL));
-
-  int n = 0;
-  do {
-    snprintf(dataDir, sizeof(dataDir), "/data%d", n++);
-  } while (SD.exists(dataDir));
-
-  for (int attempt = 0; ; attempt++) {
-    if (SD.mkdir(dataDir)) {
-      Serial.printf("OK. Created data directory: %s\n", dataDir);
-      break;
-    }
-    Serial.printf("ERR failed to create %s (attempt %d/3)\n", dataDir, attempt + 1);
-    if (attempt >= 2) break;
     delay(50);
   }
+  sysLog("OK. Camera warm-up done");
+
+  sysLog("Mounting SD ...");
+  if (!SD.begin(SD_CS_PIN, SPI, 40000000)) {
+    sysLog("ERR SD mount failed");
+    while(1);
+  }
+  gInitSD = true;
+  {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "OK. SD ready (%llu MB)", SD.cardSize() / (1024ULL * 1024ULL));
+    sysLog(buf);
+  }
+
+  loadWifiConfig();
+
+  // WiFi scan during boot (replaces delay(8000))
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  sysLog("Scanning for WiFi hotspot ...");
+  bool wifiFound = false;
+  int n = WiFi.scanNetworks();
+  for (int i = 0; i < n; i++) {
+    if (WiFi.SSID(i) == gWifiSSID) { wifiFound = true; break; }
+  }
+
+  if (wifiFound) {
+    char buf[80];
+    snprintf(buf, sizeof(buf), "Found %s, connecting...", gWifiSSID);
+    sysLog(buf);
+    WiFi.begin(gWifiSSID, gWifiPass);
+    const uint32_t connStart = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - connStart < 8000) {
+      delay(200);
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      snprintf(buf, sizeof(buf), "WiFi: connected %s", WiFi.localIP().toString().c_str());
+      sysLog(buf);
+      gWifiMode = true;
+    } else {
+      sysLog("WiFi: connection timeout, going offline");
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+    }
+  } else {
+    sysLog("WiFi: hotspot not found, going offline");
+    WiFi.mode(WIFI_OFF);
+  }
+
+  // Create recording directory only in non-wifi mode (web mode starts on demand)
+  if (!gWifiMode) {
+    int dirN = 0;
+    do { snprintf(dataDir, sizeof(dataDir), "/data%d", dirN++); }
+    while (SD.exists(dataDir));
+    for (int attempt = 0; ; attempt++) {
+      if (SD.mkdir(dataDir)) { Serial.printf("OK. Created %s\n", dataDir); break; }
+      if (attempt >= 2) break;
+      delay(50);
+    }
+  }
+
+  gSdMutex = xSemaphoreCreateMutex();
+  if (!gSdMutex) { sysLog("ERR gSdMutex failed"); while(1); }
 
   gPacketQueue   = xQueueCreate(PACKET_QUEUE_LEN,    sizeof(Packet));
   gTofQueue      = xQueueCreate(TOF_QUEUE_LEN,       sizeof(TOFSample));
@@ -207,8 +309,7 @@ void setup() {
   gMidPhotoQueue = xQueueCreate(MID_PHOTO_QUEUE_LEN, sizeof(MidPhoto));
   gEndPhotoQueue = xQueueCreate(END_PHOTO_QUEUE_LEN, sizeof(EndPhoto));
   if (!gPacketQueue || !gTofQueue || !gAudioQueue || !gMidPhotoQueue || !gEndPhotoQueue) {
-    Serial.println("ERR queue create failed");
-    while(1);
+    sysLog("ERR queue create failed"); while(1);
   }
 
   BaseType_t ok1 = xTaskCreatePinnedToCore(samplerTask,  "sampler",  SAMPLER_STACK_SIZE,   nullptr, SAMPLER_PRIORITY,   nullptr,              0);
@@ -217,63 +318,68 @@ void setup() {
   BaseType_t ok4 = xTaskCreatePinnedToCore(audioTask,    "audio",    AUDIO_STACK_SIZE,     nullptr, AUDIO_PRIORITY,     &gAudioTaskHandle,    0);
   BaseType_t ok5 = xTaskCreatePinnedToCore(midPhotoTask, "midphoto", MID_PHOTO_STACK_SIZE, nullptr, MID_PHOTO_PRIORITY, &gMidPhotoTaskHandle, 1);
   BaseType_t ok6 = xTaskCreatePinnedToCore(endPhotoTask, "endphoto", END_PHOTO_STACK_SIZE, nullptr, END_PHOTO_PRIORITY, &gEndPhotoTaskHandle, 1);
-  if (ok1 != pdPASS || ok2 != pdPASS || ok3 != pdPASS || ok4 != pdPASS || ok5 != pdPASS || ok6 != pdPASS) {
-    Serial.println("ERR task create failed");
-    while(1);
+  if (ok1!=pdPASS||ok2!=pdPASS||ok3!=pdPASS||ok4!=pdPASS||ok5!=pdPASS||ok6!=pdPASS) {
+    sysLog("ERR task create failed"); while(1);
+  }
+
+  if (gWifiMode) {
+    BaseType_t okW = xTaskCreatePinnedToCore(webTask, "web", WEB_STACK_SIZE, nullptr, WEB_PRIORITY, nullptr, 1);
+    if (okW != pdPASS) { sysLog("ERR webTask create failed"); }
   }
 }
 
-void loop() {
-  vTaskDelete(NULL);
+void loop() { vTaskDelete(NULL); }
+
+/********* WiFi config from SD *********/
+void loadWifiConfig() {
+  if (!SD.exists("/wifi.cfg")) return;
+  File f = SD.open("/wifi.cfg", FILE_READ);
+  if (!f) return;
+  while (f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.startsWith("ssid=")) strncpy(gWifiSSID, line.substring(5).c_str(), 63);
+    else if (line.startsWith("pass=")) strncpy(gWifiPass, line.substring(5).c_str(), 63);
+  }
+  f.close();
+  sysLog("WiFi: config loaded from /wifi.cfg");
 }
 
 /********* Audio Init *********/
 void setupAudio() {
-  Serial.println("Initialising microphone …");
+  sysLog("Initialising microphone ...");
   I2S.setPinsPdmRx(42, 41);
   if (!I2S.begin(I2S_MODE_PDM_RX, 16000, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO)) {
-    Serial.println("ERR Failed to initialize I2S!");
+    sysLog("ERR Failed to initialize I2S!");
     while(1);
   }
-  Serial.println("OK. I2S driver ready.");
+  gInitAudio = true;
+  sysLog("OK. I2S driver ready.");
 }
 
 /********* Audio Task *********/
 void audioTask(void* arg) {
   for (;;) {
     uint8_t* pcm_buf = (uint8_t*)malloc(AUDIO_PCM_SIZE);
-    if (!pcm_buf) {
-      Serial.println("ERR audioTask malloc failed");
-      vTaskDelay(pdMS_TO_TICKS(1000));
-      continue;
-    }
-
+    if (!pcm_buf) { Serial.println("ERR audioTask malloc failed"); vTaskDelay(pdMS_TO_TICKS(1000)); continue; }
     size_t bytes_read = I2S.readBytes((char*)pcm_buf, AUDIO_PCM_SIZE);
-    if (bytes_read != AUDIO_PCM_SIZE) {
+    if (bytes_read != AUDIO_PCM_SIZE)
       Serial.printf("WARN I2S read only %u of %u bytes\n", bytes_read, (unsigned int)AUDIO_PCM_SIZE);
-    }
-
     {
-      static float hpf_x_prev = 0.0f;
-      static float hpf_y_prev = 0.0f;
+      static float hpf_x_prev = 0.0f, hpf_y_prev = 0.0f;
       int16_t* samples = reinterpret_cast<int16_t*>(pcm_buf);
       const size_t n = bytes_read / sizeof(int16_t);
       for (size_t i = 0; i < n; ++i) {
         float x = static_cast<float>(samples[i]);
         float y = x - hpf_x_prev + AUDIO_HPF_ALPHA * hpf_y_prev;
-        hpf_x_prev = x;
-        hpf_y_prev = y;
+        hpf_x_prev = x; hpf_y_prev = y;
         float out = y * AUDIO_GAIN;
         if      (out >  32767.0f) out =  32767.0f;
         else if (out < -32768.0f) out = -32768.0f;
         samples[i] = static_cast<int16_t>(out);
       }
     }
-
-    if (xQueueSend(gAudioQueue, &pcm_buf, 0) != pdPASS) {
-      Serial.println("WARN audio queue full, dropping");
-      free(pcm_buf);
-    }
+    if (xQueueSend(gAudioQueue, &pcm_buf, 0) != pdPASS) { free(pcm_buf); }
   }
 }
 
@@ -282,34 +388,24 @@ void midPhotoTask(void* arg) {
   for (;;) {
     uint32_t notifiedIdx = 0;
     xTaskNotifyWait(0, UINT32_MAX, &notifiedIdx, portMAX_DELAY);
-    const uint32_t wStart = gMidPhotoWindowStartMs;
-
-    const uint32_t target = wStart + MID_PHOTO_TARGET_MS;
+    const uint32_t target = gMidPhotoWindowStartMs + MID_PHOTO_TARGET_MS;
     const uint32_t now = millis();
     if (now < target) vTaskDelay(pdMS_TO_TICKS(target - now));
-
-    uint8_t* buf = nullptr;
-    size_t   len = 0;
+    uint8_t* buf = nullptr; size_t len = 0;
     camera_fb_t* fb = esp_camera_fb_get();
     if (fb) {
       buf = (uint8_t*)malloc(fb->len);
-      if (buf) {
-        memcpy(buf, fb->buf, fb->len);
-        len = fb->len;
-      }
+      if (buf) { memcpy(buf, fb->buf, fb->len); len = fb->len; }
       esp_camera_fb_return(fb);
     }
-
     MidPhoto mp = {};
-    mp.buf       = buf;
-    mp.len       = len;
+    mp.buf = buf; mp.len = len;
     mp.captureTs = (fb && buf) ? millis() : 0;
     mp.packetIdx = notifiedIdx;
-    if (!fb)       strncpy(mp.reason, "camera capture failed", sizeof(mp.reason) - 1);
-    else if (!buf) strncpy(mp.reason, "malloc failed",         sizeof(mp.reason) - 1);
+    if (!fb)       strncpy(mp.reason, "camera capture failed", sizeof(mp.reason)-1);
+    else if (!buf) strncpy(mp.reason, "malloc failed",         sizeof(mp.reason)-1);
     if (xQueueSend(gMidPhotoQueue, &mp, pdMS_TO_TICKS(50)) != pdPASS) {
       if (buf) free(buf);
-      Serial.println("ERR mid-photo queue full");
     }
   }
 }
@@ -319,66 +415,46 @@ void endPhotoTask(void* arg) {
   for (;;) {
     uint32_t notifiedIdx = 0;
     xTaskNotifyWait(0, UINT32_MAX, &notifiedIdx, portMAX_DELAY);
-    const uint32_t wStart = gEndPhotoWindowStartMs;
-
-    const uint32_t target = wStart + END_PHOTO_TARGET_MS;
+    const uint32_t target = gEndPhotoWindowStartMs + END_PHOTO_TARGET_MS;
     const uint32_t now = millis();
     if (now < target) vTaskDelay(pdMS_TO_TICKS(target - now));
-
-    uint8_t* buf = nullptr;
-    size_t   len = 0;
+    uint8_t* buf = nullptr; size_t len = 0;
     camera_fb_t* fb = esp_camera_fb_get();
     if (fb) {
       buf = (uint8_t*)malloc(fb->len);
-      if (buf) {
-        memcpy(buf, fb->buf, fb->len);
-        len = fb->len;
-      }
+      if (buf) { memcpy(buf, fb->buf, fb->len); len = fb->len; }
       esp_camera_fb_return(fb);
     }
-
     EndPhoto ep = {};
-    ep.buf       = buf;
-    ep.len       = len;
+    ep.buf = buf; ep.len = len;
     ep.captureTs = (fb && buf) ? millis() : 0;
     ep.packetIdx = notifiedIdx;
-    if (!fb)       strncpy(ep.reason, "camera capture failed", sizeof(ep.reason) - 1);
-    else if (!buf) strncpy(ep.reason, "malloc failed",         sizeof(ep.reason) - 1);
+    if (!fb)       strncpy(ep.reason, "camera capture failed", sizeof(ep.reason)-1);
+    else if (!buf) strncpy(ep.reason, "malloc failed",         sizeof(ep.reason)-1);
     if (xQueueSend(gEndPhotoQueue, &ep, pdMS_TO_TICKS(50)) != pdPASS) {
       if (buf) free(buf);
-      Serial.println("ERR end-photo queue full");
     }
   }
 }
 
 /********* IMU init (I2C) *********/
 void setupIMU() {
-  if (!myIMU.init()) {
-    Serial.println("ERR ICM20948 does not respond");
-    return;
-  }
-  Serial.println("OK. ICM20948 connected via I2C (0x68)");
-
-  if (myIMU.initMagnetometer()) {
-    Serial.println("OK. Magnetometer ready");
-    hasMag = true;
-  } else {
-    Serial.println("WARN Magnetometer init failed — continuing without");
-  }
-
+  if (!myIMU.init()) { sysLog("ERR ICM20948 does not respond"); return; }
+  gInitIMU = true;
+  sysLog("OK. ICM20948 connected via I2C (0x68)");
+  if (myIMU.initMagnetometer()) { hasMag = true; sysLog("OK. Magnetometer ready"); }
+  else { sysLog("WARN Magnetometer init failed"); }
   myIMU.setAccRange(ICM20948_ACC_RANGE_8G);
   myIMU.setAccDLPF(ICM20948_DLPF_6);
   myIMU.setAccSampleRateDivider(10);
-
   myIMU.setGyrRange(ICM20948_GYRO_RANGE_1000);
   myIMU.setGyrDLPF(ICM20948_DLPF_6);
   myIMU.setGyrSampleRateDivider(10);
-
   myIMU.setFifoMode(ICM20948_CONTINUOUS);
   myIMU.enableFifo(true);
   delay(100);
   myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
-  Serial.println("FIFO started (ACC+GYR @ ~100 Hz)");
+  sysLog("FIFO started (ACC+GYR @ ~100 Hz)");
 }
 
 /********* ToF init (VL53L1X) *********/
@@ -389,16 +465,15 @@ void setupTOF() {
     tof.setMeasurementTimingBudget(50000);
     tof.startContinuous(55); // period_ms must be >= timing budget (50 ms)
     hasTOF = true;
-    Serial.println("OK. VL53L1X ready (continuous, long mode)");
+    sysLog("OK. VL53L1X ready (continuous, long mode)");
   } else {
-    Serial.println("WARN VL53L1X init failed — continuing without ToF");
+    sysLog("WARN VL53L1X init failed — continuing without ToF");
   }
 }
 
-/********* ToF Task (VL53L1X polling) *********/
+/********* ToF Task *********/
 void tofTask(void* arg) {
   if (!hasTOF) vTaskDelete(NULL);
-
   for (;;) {
     if (tof.dataReady()) {
       tof.read(false);
@@ -422,7 +497,7 @@ void samplerTask(void* arg) {
   myIMU.startFifo(ICM20948_FIFO_ACC_GYR);
   { TOFSample tmp; while (xQueueReceive(gTofQueue, &tmp, 0) == pdPASS) {} }
 
-  // Warmup-Fenster
+  // Warmup window
   gEndPhotoWindowStartMs = windowStartMs;
   gMidPhotoWindowStartMs = windowStartMs;
   if (gEndPhotoTaskHandle) xTaskNotify(gEndPhotoTaskHandle, UINT32_MAX, eSetValueWithOverwrite);
@@ -448,11 +523,10 @@ void samplerTask(void* arg) {
 
     gMidPhotoWindowStartMs = windowStartMs + PACKET_INTERVAL_MS;
     if (gMidPhotoTaskHandle) xTaskNotify(gMidPhotoTaskHandle, mediaCounter + 1, eSetValueWithOverwrite);
-    LOGV("Sampler task: Window end at %lu ms.\n", (unsigned long)millis());
 
     static Packet pkt;
     pkt = {};
-    pkt.idx = mediaCounter;
+    pkt.idx   = mediaCounter;
     pkt.ts_ms = windowStartMs;
 
     auto addError = [](const char* msg) {
@@ -462,23 +536,17 @@ void samplerTask(void* arg) {
 
     uint8_t* pcmBuf = nullptr;
     if (xQueueReceive(gAudioQueue, &pcmBuf, pdMS_TO_TICKS(200)) == pdPASS) {
-      pkt.pcmBuf = pcmBuf;
-      pkt.pcmSize = AUDIO_PCM_SIZE;
+      pkt.pcmBuf = pcmBuf; pkt.pcmSize = AUDIO_PCM_SIZE;
     } else {
-      Serial.println("WARN sampler task missing audio buffer.");
       addError("audio: buffer missing (queue timeout)");
-      pkt.pcmBuf = nullptr;
-      pkt.pcmSize = 0;
+      pkt.pcmBuf = nullptr; pkt.pcmSize = 0;
     }
 
     {
       int16_t rawCount = myIMU.getNumberOfFifoDataSets();
-      if (rawCount < 0) {
-        addError("IMU: FIFO read error (negative count)");
-      } else if (rawCount == 0) {
-        addError("IMU: FIFO empty at window end");
-      }
-      size_t count = (rawCount > 0) ? static_cast<size_t>(rawCount) : 0;
+      if (rawCount < 0) { addError("IMU: FIFO read error (negative count)"); }
+      else if (rawCount == 0) { addError("IMU: FIFO empty at window end"); }
+      size_t count = (rawCount > 0) ? (size_t)rawCount : 0;
       if (count > MAX_FIFO_SETS) count = MAX_FIFO_SETS;
       for (size_t i = 0; i < count; ++i) {
         xyzFloat acc, gyr;
@@ -490,81 +558,83 @@ void samplerTask(void* arg) {
     }
 
     pkt.mag = {0,0,0};
-    if (hasMag) {
-      myIMU.readSensor();
-      myIMU.getMagValues(&pkt.mag);
-    }
+    if (hasMag) { myIMU.readSensor(); myIMU.getMagValues(&pkt.mag); }
 
     pkt.tofCount = 0;
     if (hasTOF) {
       TOFSample sample;
       while (xQueueReceive(gTofQueue, &sample, 0) == pdPASS && pkt.tofCount < MAX_TOF_READINGS) {
-        pkt.tof[pkt.tofCount].ts_offset_ms  = sample.ts_ms - pkt.ts_ms;
-        pkt.tof[pkt.tofCount].distance_mm[0]    = sample.distance_mm[0];
-        pkt.tof[pkt.tofCount].target_status[0]  = sample.target_status[0];
+        pkt.tof[pkt.tofCount].ts_offset_ms    = sample.ts_ms - pkt.ts_ms;
+        pkt.tof[pkt.tofCount].distance_mm[0]  = sample.distance_mm[0];
+        pkt.tof[pkt.tofCount].target_status[0]= sample.target_status[0];
         pkt.tofCount++;
       }
     }
 
     {
-      MidPhoto mp = {};
-      bool gotMid = false;
+      MidPhoto mp = {}; bool gotMid = false;
       while (xQueueReceive(gMidPhotoQueue, &mp, 0) == pdPASS) {
         if (mp.packetIdx == pkt.idx) { gotMid = true; break; }
         if (mp.buf) free(mp.buf);
         char msg[MAX_ERROR_LEN];
-        snprintf(msg, sizeof(msg), "mid-photo: stale idx=%lu verworfen", (unsigned long)mp.packetIdx);
-        addError(msg);
-        mp = {};
+        snprintf(msg, sizeof(msg), "mid-photo: stale idx=%lu", (unsigned long)mp.packetIdx);
+        addError(msg); mp = {};
       }
       if (gotMid) {
-        pkt.midImgBuf    = mp.buf;
-        pkt.midImgLen    = mp.len;
-        pkt.midCaptureTs = mp.captureTs;
-        if (!mp.buf) {
-          char msg[MAX_ERROR_LEN];
-          snprintf(msg, sizeof(msg), "mid-photo: %s", mp.reason[0] ? mp.reason : "null buf");
-          addError(msg);
-        }
-      } else {
-        addError("mid-photo: not in queue at window end");
-      }
+        pkt.midImgBuf = mp.buf; pkt.midImgLen = mp.len; pkt.midCaptureTs = mp.captureTs;
+        if (!mp.buf) { char msg[MAX_ERROR_LEN]; snprintf(msg, sizeof(msg), "mid-photo: %s", mp.reason[0]?mp.reason:"null buf"); addError(msg); }
+      } else { addError("mid-photo: not in queue at window end"); }
     }
     {
-      EndPhoto ep = {};
-      bool gotEnd = false;
+      EndPhoto ep = {}; bool gotEnd = false;
       while (xQueueReceive(gEndPhotoQueue, &ep, 0) == pdPASS) {
         if (ep.packetIdx == pkt.idx) { gotEnd = true; break; }
         if (ep.buf) free(ep.buf);
         char msg[MAX_ERROR_LEN];
-        snprintf(msg, sizeof(msg), "end-photo: stale idx=%lu verworfen", (unsigned long)ep.packetIdx);
-        addError(msg);
-        ep = {};
+        snprintf(msg, sizeof(msg), "end-photo: stale idx=%lu", (unsigned long)ep.packetIdx);
+        addError(msg); ep = {};
       }
       if (gotEnd) {
-        pkt.endImgBuf    = ep.buf;
-        pkt.endImgLen    = ep.len;
-        pkt.endCaptureTs = ep.captureTs;
-        if (!ep.buf) {
-          char msg[MAX_ERROR_LEN];
-          snprintf(msg, sizeof(msg), "end-photo: %s", ep.reason[0] ? ep.reason : "null buf");
-          addError(msg);
-        }
-      } else {
-        addError("end-photo: not in queue at window end");
+        pkt.endImgBuf = ep.buf; pkt.endImgLen = ep.len; pkt.endCaptureTs = ep.captureTs;
+        if (!ep.buf) { char msg[MAX_ERROR_LEN]; snprintf(msg, sizeof(msg), "end-photo: %s", ep.reason[0]?ep.reason:"null buf"); addError(msg); }
+      } else { addError("end-photo: not in queue at window end"); }
+    }
+
+    // Update shared web status
+    if (gWifiMode) {
+      WebStatus ws = {};
+      ws.uptime_ms    = millis();
+      ws.packet_count = mediaCounter;
+      if (pkt.imuCount > 0) {
+        const auto& last = pkt.imu[pkt.imuCount - 1];
+        ws.ax = last.ax; ws.ay = last.ay; ws.az = last.az;
+        ws.gx = last.gx; ws.gy = last.gy; ws.gz = last.gz;
       }
+      ws.mag_x = pkt.mag.x; ws.mag_y = pkt.mag.y; ws.mag_z = pkt.mag.z;
+      if (pkt.tofCount > 0) {
+        ws.tof_mm     = pkt.tof[pkt.tofCount-1].distance_mm[0];
+        ws.tof_status = pkt.tof[pkt.tofCount-1].target_status[0];
+        ws.tof_valid  = true;
+      }
+      memcpy(&gWebStatus, &ws, sizeof(ws));
     }
 
     windowStartMs += PACKET_INTERVAL_MS;
 
-    if (xQueueSend(gPacketQueue, &pkt, pdMS_TO_TICKS(50)) != pdPASS) {
+    if (gWifiMode && !gRecording) {
+      // Discard packet in web mode when not recording
       if (pkt.pcmBuf)    free(pkt.pcmBuf);
       if (pkt.midImgBuf) free(pkt.midImgBuf);
       if (pkt.endImgBuf) free(pkt.endImgBuf);
-      Serial.println("WARN packet queue full — dropping packet");
     } else {
-      LOGV_LN("Sampler task: Packet sent to writer.");
-      mediaCounter++;
+      if (xQueueSend(gPacketQueue, &pkt, pdMS_TO_TICKS(50)) != pdPASS) {
+        if (pkt.pcmBuf)    free(pkt.pcmBuf);
+        if (pkt.midImgBuf) free(pkt.midImgBuf);
+        if (pkt.endImgBuf) free(pkt.endImgBuf);
+        Serial.println("WARN packet queue full — dropping");
+      } else {
+        mediaCounter++;
+      }
     }
   }
 }
@@ -573,43 +643,30 @@ void samplerTask(void* arg) {
 void buildJson(const Packet& pkt, JsonDocument& doc) {
   doc["ts"] = pkt.ts_ms;
   JsonObject magObj = doc["mag"].to<JsonObject>();
-  magObj["x"] = pkt.mag.x;
-  magObj["y"] = pkt.mag.y;
-  magObj["z"] = pkt.mag.z;
-
+  magObj["x"] = pkt.mag.x; magObj["y"] = pkt.mag.y; magObj["z"] = pkt.mag.z;
   JsonArray tofArr = doc["tof"].to<JsonArray>();
   for (size_t i = 0; i < pkt.tofCount; ++i) {
-    JsonObject e   = tofArr.add<JsonObject>();
-    e["t"]         = pkt.tof[i].ts_offset_ms;
-    JsonArray dArr = e["d"].to<JsonArray>();
-    JsonArray sArr = e["s"].to<JsonArray>();
-    dArr.add(pkt.tof[i].distance_mm[0]);
-    sArr.add(pkt.tof[i].target_status[0]);
+    JsonObject e = tofArr.add<JsonObject>();
+    e["t"] = pkt.tof[i].ts_offset_ms;
+    e["d"].to<JsonArray>().add(pkt.tof[i].distance_mm[0]);
+    e["s"].to<JsonArray>().add(pkt.tof[i].target_status[0]);
   }
-
   JsonArray imuArr = doc["IMU"].to<JsonArray>();
   for (size_t i = 0; i < pkt.imuCount; ++i) {
     JsonObject e = imuArr.add<JsonObject>();
-    e["i"] = static_cast<uint16_t>(i);
-    JsonObject a = e["a"].to<JsonObject>();
-    a["x"] = pkt.imu[i].ax;
-    a["y"] = pkt.imu[i].ay;
-    a["z"] = pkt.imu[i].az;
-    JsonObject g = e["g"].to<JsonObject>();
-    g["x"] = pkt.imu[i].gx;
-    g["y"] = pkt.imu[i].gy;
-    g["z"] = pkt.imu[i].gz;
+    e["i"] = (uint16_t)i;
+    e["a"].to<JsonObject>()["x"] = pkt.imu[i].ax;
+    e["a"].to<JsonObject>()["y"] = pkt.imu[i].ay;
+    e["a"].to<JsonObject>()["z"] = pkt.imu[i].az;
+    e["g"].to<JsonObject>()["x"] = pkt.imu[i].gx;
+    e["g"].to<JsonObject>()["y"] = pkt.imu[i].gy;
+    e["g"].to<JsonObject>()["z"] = pkt.imu[i].gz;
   }
-
-  if (pkt.midCaptureTs > 0)
-    doc["midTs"] = (int32_t)(pkt.midCaptureTs - pkt.ts_ms);
-  if (pkt.endCaptureTs > 0)
-    doc["endTs"] = (int32_t)(pkt.endCaptureTs - pkt.ts_ms);
-
+  if (pkt.midCaptureTs > 0) doc["midTs"] = (int32_t)(pkt.midCaptureTs - pkt.ts_ms);
+  if (pkt.endCaptureTs > 0) doc["endTs"] = (int32_t)(pkt.endCaptureTs - pkt.ts_ms);
   if (pkt.errorCount > 0) {
     JsonArray errArr = doc["errors"].to<JsonArray>();
-    for (size_t i = 0; i < pkt.errorCount; i++)
-      errArr.add(pkt.errorMsgs[i]);
+    for (size_t i = 0; i < pkt.errorCount; i++) errArr.add(pkt.errorMsgs[i]);
   }
 }
 
@@ -623,14 +680,15 @@ void writerTask(void* arg) {
     if (xQueueReceive(gPacketQueue, &pkt, portMAX_DELAY) != pdPASS) continue;
 
     const uint32_t writeStart = millis();
-
     const uint32_t bucket = pkt.idx / PACKETS_PER_BUCKET;
+
+    xSemaphoreTake(gSdMutex, portMAX_DELAY);
+
     if (bucket != currentBucket) {
       snprintf(bucketDir, sizeof(bucketDir), "%s/%04lu", dataDir, (unsigned long)bucket);
       if (!SD.exists(bucketDir)) {
         for (int attempt = 0; ; attempt++) {
           if (SD.mkdir(bucketDir)) break;
-          Serial.printf("ERR failed to create bucket %s (attempt %d/3)\n", bucketDir, attempt + 1);
           if (attempt >= 2) break;
           vTaskDelay(pdMS_TO_TICKS(50));
         }
@@ -641,76 +699,412 @@ void writerTask(void* arg) {
     JsonDocument doc;
     buildJson(pkt, doc);
 
-    LOGV("PKT %lu  ts=%lu  imu=%u  tof=%u  audio=%u\n",
-         pkt.idx, pkt.ts_ms,
-         (unsigned)pkt.imuCount, (unsigned)pkt.tofCount,
-         (unsigned)pkt.pcmSize);
-
     char path[64];
     snprintf(path, sizeof(path), "%s/pkt_%lu.json", bucketDir, pkt.idx);
-    if (File f = SD.open(path, FILE_WRITE)) {
-      serializeJson(doc, f);
-      f.close();
-      LOGV("OK  saved %s\n", path);
-    } else {
-      Serial.printf("ERR failed to open %s\n", path);
-    }
+    if (File f = SD.open(path, FILE_WRITE)) { serializeJson(doc, f); f.close(); }
 
     if (pkt.pcmBuf && pkt.pcmSize > 0) {
       snprintf(path, sizeof(path), "%s/rec_%lu_%lu.wav", bucketDir, pkt.idx, pkt.ts_ms);
       if (File wf = SD.open(path, FILE_WRITE)) {
         uint8_t hdr[WAV_HEADER_SIZE];
-        const uint32_t data_size   = pkt.pcmSize;
-        const uint32_t chunk_size  = WAV_HEADER_SIZE - 8 + data_size;
-        const uint32_t byte_rate   = AUDIO_FS * AUDIO_CHAN * (AUDIO_BITS / 8);
-        const uint16_t block_align = AUDIO_CHAN * (AUDIO_BITS / 8);
-        memcpy(hdr +  0, "RIFF",           4);
-        memcpy(hdr +  4, &chunk_size,       4);
-        memcpy(hdr +  8, "WAVE",           4);
-        memcpy(hdr + 12, "fmt ",           4);
-        const uint32_t fmt_size = 16;      memcpy(hdr + 16, &fmt_size,   4);
-        const uint16_t pcm_fmt  = 1;       memcpy(hdr + 20, &pcm_fmt,    2);
-        const uint16_t channels = AUDIO_CHAN; memcpy(hdr + 22, &channels, 2);
-        const uint32_t sample_rate = AUDIO_FS; memcpy(hdr + 24, &sample_rate, 4);
-        memcpy(hdr + 28, &byte_rate,        4);
-        memcpy(hdr + 32, &block_align,      2);
-        const uint16_t bits = AUDIO_BITS;  memcpy(hdr + 34, &bits,       2);
-        memcpy(hdr + 36, "data",           4);
-        memcpy(hdr + 40, &data_size,        4);
+        const uint32_t data_size  = pkt.pcmSize;
+        const uint32_t chunk_size = WAV_HEADER_SIZE - 8 + data_size;
+        const uint32_t byte_rate  = AUDIO_FS * AUDIO_CHAN * (AUDIO_BITS/8);
+        const uint16_t blk_align  = AUDIO_CHAN * (AUDIO_BITS/8);
+        memcpy(hdr+0,  "RIFF", 4); memcpy(hdr+4,  &chunk_size, 4);
+        memcpy(hdr+8,  "WAVE", 4); memcpy(hdr+12, "fmt ",       4);
+        const uint32_t fmt_sz=16;  memcpy(hdr+16, &fmt_sz,      4);
+        const uint16_t pcm_fmt=1;  memcpy(hdr+20, &pcm_fmt,     2);
+        const uint16_t ch=AUDIO_CHAN; memcpy(hdr+22, &ch,        2);
+        const uint32_t sr=AUDIO_FS;   memcpy(hdr+24, &sr,        4);
+        memcpy(hdr+28, &byte_rate, 4); memcpy(hdr+32, &blk_align, 2);
+        const uint16_t bits=AUDIO_BITS; memcpy(hdr+34, &bits,     2);
+        memcpy(hdr+36, "data", 4); memcpy(hdr+40, &data_size,   4);
         wf.write(hdr, WAV_HEADER_SIZE);
         wf.write(pkt.pcmBuf, pkt.pcmSize);
         wf.close();
-      } else {
-        Serial.printf("ERR failed to open %s\n", path);
       }
       free(pkt.pcmBuf);
     }
 
     if (pkt.endImgBuf && pkt.endImgLen > 0) {
       snprintf(path, sizeof(path), "%s/img_%lu_%lu.jpg", bucketDir, pkt.idx, pkt.ts_ms);
-      if (File img = SD.open(path, FILE_WRITE)) {
-        img.write(pkt.endImgBuf, pkt.endImgLen);
-        img.close();
-      } else {
-        Serial.printf("ERR failed to open %s\n", path);
-      }
+      if (File img = SD.open(path, FILE_WRITE)) { img.write(pkt.endImgBuf, pkt.endImgLen); img.close(); }
       free(pkt.endImgBuf);
     }
 
     if (pkt.midImgBuf && pkt.midImgLen > 0) {
       snprintf(path, sizeof(path), "%s/mid_%lu_%lu.jpg", bucketDir, pkt.idx, pkt.ts_ms);
-      if (File mf = SD.open(path, FILE_WRITE)) {
-        mf.write(pkt.midImgBuf, pkt.midImgLen);
-        mf.close();
-      } else {
-        Serial.printf("ERR failed to open %s\n", path);
-      }
+      if (File mf = SD.open(path, FILE_WRITE)) { mf.write(pkt.midImgBuf, pkt.midImgLen); mf.close(); }
       free(pkt.midImgBuf);
     }
 
+    xSemaphoreGive(gSdMutex);
+
     const uint32_t writeMs = millis() - writeStart;
-    if (writeMs > 950) {
-      Serial.printf("WARN writer slow: pkt %lu took %lu ms\n", pkt.idx, writeMs);
+    if (writeMs > 950) Serial.printf("WARN writer slow: pkt %lu took %lu ms\n", pkt.idx, writeMs);
+  }
+}
+
+/********* Web Task *********/
+static WebServer gServer(80);
+
+static const char* mimeType(const char* path) {
+  if (strstr(path, ".html")) return "text/html";
+  if (strstr(path, ".css"))  return "text/css";
+  if (strstr(path, ".js"))   return "application/javascript";
+  if (strstr(path, ".json")) return "application/json";
+  if (strstr(path, ".jpg"))  return "image/jpeg";
+  return "text/plain";
+}
+
+static void serveFromLittleFS(const String& uri) {
+  if (!LittleFS.exists(uri)) { gServer.send(404, "text/plain", "Not found"); return; }
+  File f = LittleFS.open(uri, "r");
+  gServer.streamFile(f, mimeType(uri.c_str()));
+  f.close();
+}
+
+// Write little-endian 16/32 bit to client
+static void writeU16(WiFiClient& c, uint16_t v) { uint8_t b[2]={uint8_t(v),uint8_t(v>>8)}; c.write(b,2); }
+static void writeU32(WiFiClient& c, uint32_t v) { uint8_t b[4]={uint8_t(v),uint8_t(v>>8),uint8_t(v>>16),uint8_t(v>>24)}; c.write(b,4); }
+
+struct ZipEntry { char rel[96]; uint32_t offset, crc32, size; };
+
+static void streamZipFolder(const char* folder) {
+  const int MAX_ZIP_FILES = 600;
+  ZipEntry* entries = (ZipEntry*)malloc(MAX_ZIP_FILES * sizeof(ZipEntry));
+  if (!entries) { gServer.send(500, "text/plain", "OOM"); return; }
+  int entryCount = 0;
+
+  // Collect file list
+  xSemaphoreTake(gSdMutex, portMAX_DELAY);
+  File root = SD.open(folder);
+  if (!root || !root.isDirectory()) {
+    xSemaphoreGive(gSdMutex);
+    free(entries);
+    gServer.send(404, "text/plain", "Folder not found");
+    return;
+  }
+  // Scan buckets
+  File bkt = root.openNextFile();
+  while (bkt && entryCount < MAX_ZIP_FILES) {
+    if (bkt.isDirectory()) {
+      char bktPath[64];
+      snprintf(bktPath, sizeof(bktPath), "%s/%s", folder, bkt.name());
+      File bDir = SD.open(bktPath);
+      if (bDir) {
+        File f = bDir.openNextFile();
+        while (f && entryCount < MAX_ZIP_FILES) {
+          ZipEntry& e = entries[entryCount++];
+          snprintf(e.rel, sizeof(e.rel), "%s/%s/%s",
+            folder+1, bkt.name(), f.name()); // strip leading /
+          e.size   = f.size();
+          e.offset = 0; e.crc32 = 0;
+          f.close(); f = bDir.openNextFile();
+        }
+        bDir.close();
+      }
     }
+    bkt.close(); bkt = root.openNextFile();
+  }
+  root.close();
+  xSemaphoreGive(gSdMutex);
+
+  // Start HTTP response with chunked transfer
+  String folderName = String(folder).substring(1); // strip /
+  WiFiClient client = gServer.client();
+  String header = "HTTP/1.1 200 OK\r\nContent-Type: application/zip\r\n";
+  header += "Content-Disposition: attachment; filename=\"" + folderName + ".zip\"\r\n";
+  header += "Transfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
+  client.print(header);
+
+  auto writeChunk = [&](const uint8_t* data, size_t len) {
+    char hex[12]; snprintf(hex, sizeof(hex), "%X\r\n", (unsigned)len);
+    client.print(hex);
+    client.write(data, len);
+    client.print("\r\n");
+  };
+  auto writeChunkStr = [&](const char* s, size_t len) {
+    writeChunk((const uint8_t*)s, len);
+  };
+
+  uint32_t streamOffset = 0;
+  uint8_t  fileBuf[512];
+
+  for (int i = 0; i < entryCount; i++) {
+    ZipEntry& e = entries[i];
+    e.offset = streamOffset;
+
+    // Local file header (30 + filename)
+    uint16_t fnLen = strlen(e.rel);
+    uint8_t lhdr[30] = {};
+    lhdr[0]=0x50;lhdr[1]=0x4B;lhdr[2]=0x03;lhdr[3]=0x04; // sig
+    lhdr[4]=20;lhdr[5]=0;   // version needed
+    lhdr[6]=0x08;lhdr[7]=0; // flag: data descriptor
+    // compression=0, time=0, date=0, crc=0, sizes=0
+    lhdr[26]=uint8_t(fnLen); lhdr[27]=uint8_t(fnLen>>8);
+    writeChunk(lhdr, 30);
+    writeChunkStr(e.rel, fnLen);
+    streamOffset += 30 + fnLen;
+
+    // Stream file data + compute CRC
+    uint32_t crc = 0;
+    uint32_t written = 0;
+    xSemaphoreTake(gSdMutex, portMAX_DELAY);
+    char fullPath[128];
+    snprintf(fullPath, sizeof(fullPath), "/%s", e.rel);
+    File f = SD.open(fullPath, FILE_READ);
+    if (f) {
+      while (f.available()) {
+        size_t n = f.read(fileBuf, sizeof(fileBuf));
+        crc = crc32_update(crc, fileBuf, n);
+        writeChunk(fileBuf, n);
+        written += n;
+      }
+      f.close();
+    }
+    xSemaphoreGive(gSdMutex);
+    e.crc32 = crc;
+    e.size  = written;
+    streamOffset += written;
+
+    // Data descriptor
+    uint8_t dd[16] = {};
+    dd[0]=0x50;dd[1]=0x4B;dd[2]=0x07;dd[3]=0x08; // sig
+    memcpy(dd+4,  &crc,    4);
+    memcpy(dd+8,  &written, 4);
+    memcpy(dd+12, &written, 4);
+    writeChunk(dd, 16);
+    streamOffset += 16;
+  }
+
+  // Central directory
+  uint32_t cdOffset = streamOffset;
+  uint32_t cdSize   = 0;
+  for (int i = 0; i < entryCount; i++) {
+    ZipEntry& e = entries[i];
+    uint16_t fnLen = strlen(e.rel);
+    uint8_t cdhdr[46] = {};
+    cdhdr[0]=0x50;cdhdr[1]=0x4B;cdhdr[2]=0x01;cdhdr[3]=0x02;
+    cdhdr[4]=20;cdhdr[5]=0; cdhdr[6]=20;cdhdr[7]=0;
+    cdhdr[8]=0x08;cdhdr[9]=0; // flag: data descriptor
+    memcpy(cdhdr+16, &e.crc32,  4);
+    memcpy(cdhdr+20, &e.size,   4);
+    memcpy(cdhdr+24, &e.size,   4);
+    cdhdr[28]=uint8_t(fnLen); cdhdr[29]=uint8_t(fnLen>>8);
+    memcpy(cdhdr+42, &e.offset, 4);
+    writeChunk(cdhdr, 46);
+    writeChunkStr(e.rel, fnLen);
+    cdSize += 46 + fnLen;
+  }
+
+  // End of central directory
+  uint8_t eocd[22] = {};
+  eocd[0]=0x50;eocd[1]=0x4B;eocd[2]=0x05;eocd[3]=0x06;
+  uint16_t cnt = entryCount;
+  memcpy(eocd+8,  &cnt,      2);
+  memcpy(eocd+10, &cnt,      2);
+  memcpy(eocd+12, &cdSize,   4);
+  memcpy(eocd+16, &cdOffset, 4);
+  writeChunk(eocd, 22);
+
+  // End chunked transfer
+  client.print("0\r\n\r\n");
+  free(entries);
+}
+
+void webTask(void* arg) {
+  if (!LittleFS.begin(true, "/lfs")) {
+    sysLog("ERR LittleFS mount failed — web UI unavailable");
+    vTaskDelete(NULL);
+  }
+  sysLog("OK. LittleFS mounted");
+
+  // Root redirect
+  gServer.on("/", []() {
+    gServer.sendHeader("Location", "/viewer/index.html", true);
+    gServer.send(302, "text/plain", "");
+  });
+
+  // /api/status
+  gServer.on("/api/status", []() {
+    WebStatus ws;
+    memcpy(&ws, &gWebStatus, sizeof(ws));
+
+    JsonDocument doc;
+    doc["recording"]    = (bool)gRecording;
+    doc["packet_count"] = ws.packet_count;
+    doc["uptime_ms"]    = ws.uptime_ms;
+
+    JsonObject init = doc["init"].to<JsonObject>();
+    init["sd"]          = gInitSD;
+    init["camera"]      = gInitCamera;
+    init["imu"]         = gInitIMU;
+    init["magnetometer"]= hasMag;
+    init["tof"]         = hasTOF;
+    init["audio"]       = gInitAudio;
+    init["wifi"]        = (bool)gWifiMode;
+
+    JsonObject imuObj = doc["imu"].to<JsonObject>();
+    imuObj["ax"]=ws.ax; imuObj["ay"]=ws.ay; imuObj["az"]=ws.az;
+    imuObj["gx"]=ws.gx; imuObj["gy"]=ws.gy; imuObj["gz"]=ws.gz;
+
+    JsonObject tofObj = doc["tof"].to<JsonObject>();
+    tofObj["distance_mm"] = ws.tof_valid ? (int)ws.tof_mm : -1;
+    tofObj["status"]      = ws.tof_valid ? (int)ws.tof_status : -1;
+
+    JsonObject magObj = doc["mag"].to<JsonObject>();
+    magObj["x"]=ws.mag_x; magObj["y"]=ws.mag_y; magObj["z"]=ws.mag_z;
+
+    JsonArray logArr = doc["log"].to<JsonArray>();
+    for (uint8_t i = 0; i < gLogCount; i++) {
+      JsonObject e = logArr.add<JsonObject>();
+      e["ts"]  = gLog[i].ts_ms;
+      e["msg"] = gLog[i].msg;
+    }
+
+    String out; serializeJson(doc, out);
+    gServer.send(200, "application/json", out);
+  });
+
+  // /api/start
+  gServer.on("/api/start", HTTP_POST, []() {
+    if (!gRecording) {
+      // Create new data directory
+      int dirN = 0;
+      do { snprintf(dataDir, sizeof(dataDir), "/data%d", dirN++); }
+      while (SD.exists(dataDir));
+      xSemaphoreTake(gSdMutex, portMAX_DELAY);
+      SD.mkdir(dataDir);
+      xSemaphoreGive(gSdMutex);
+      mediaCounter = 0;
+      gRecording = true;
+      Serial.printf("Recording started: %s\n", dataDir);
+    }
+    gServer.send(200, "application/json", "{\"ok\":true}");
+  });
+
+  // /api/stop
+  gServer.on("/api/stop", HTTP_POST, []() {
+    gRecording = false;
+    Serial.println("Recording stopped");
+    gServer.send(200, "application/json", "{\"ok\":true}");
+  });
+
+  // /api/photo — live camera frame
+  gServer.on("/api/photo", []() {
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (!fb) { gServer.send(503, "text/plain", "Camera unavailable"); return; }
+    WiFiClient client = gServer.client();
+    String h = "HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: ";
+    h += String(fb->len);
+    h += "\r\nConnection: close\r\n\r\n";
+    client.print(h);
+    client.write(fb->buf, fb->len);
+    esp_camera_fb_return(fb);
+  });
+
+  // /api/files — session list with file paths
+  gServer.on("/api/files", []() {
+    JsonDocument doc;
+    JsonArray sessions = doc.to<JsonArray>();
+
+    xSemaphoreTake(gSdMutex, portMAX_DELAY);
+    File root = SD.open("/");
+    if (root) {
+      File entry = root.openNextFile();
+      while (entry) {
+        if (entry.isDirectory()) {
+          String name = String(entry.name());
+          if (name.startsWith("data")) {
+            JsonObject sess = sessions.add<JsonObject>();
+            sess["session"] = name;
+            String sessPath = "/" + name;
+            sess["path"] = sessPath;
+            JsonArray files = sess["files"].to<JsonArray>();
+
+            File sessDir = SD.open(sessPath.c_str());
+            if (sessDir) {
+              File bkt = sessDir.openNextFile();
+              while (bkt) {
+                if (bkt.isDirectory()) {
+                  String bktPath = sessPath + "/" + String(bkt.name());
+                  File bDir = SD.open(bktPath.c_str());
+                  if (bDir) {
+                    File f = bDir.openNextFile();
+                    while (f) {
+                      files.add(bktPath + "/" + String(f.name()));
+                      f.close(); f = bDir.openNextFile();
+                    }
+                    bDir.close();
+                  }
+                }
+                bkt.close(); bkt = sessDir.openNextFile();
+              }
+              sessDir.close();
+            }
+          }
+        }
+        entry.close(); entry = root.openNextFile();
+      }
+      root.close();
+    }
+    xSemaphoreGive(gSdMutex);
+
+    String out; serializeJson(doc, out);
+    gServer.send(200, "application/json", out);
+  });
+
+  // /api/download?path=...
+  gServer.on("/api/download", []() {
+    String path = gServer.arg("path");
+    if (path.isEmpty()) { gServer.send(400, "text/plain", "Missing path"); return; }
+
+    xSemaphoreTake(gSdMutex, portMAX_DELAY);
+    if (!SD.exists(path.c_str())) {
+      xSemaphoreGive(gSdMutex);
+      gServer.send(404, "text/plain", "Not found"); return;
+    }
+    File f = SD.open(path.c_str(), FILE_READ);
+    size_t fileSize = f.size();
+
+    WiFiClient client = gServer.client();
+    String fname = path.substring(path.lastIndexOf('/') + 1);
+    String h = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n";
+    h += "Content-Length: " + String(fileSize) + "\r\n";
+    h += "Content-Disposition: attachment; filename=\"" + fname + "\"\r\n";
+    h += "Connection: close\r\n\r\n";
+    client.print(h);
+
+    uint8_t buf[512];
+    while (f.available()) { size_t n = f.read(buf, sizeof(buf)); client.write(buf, n); }
+    f.close();
+    xSemaphoreGive(gSdMutex);
+  });
+
+  // /api/download-folder?path=...
+  gServer.on("/api/download-folder", []() {
+    String path = gServer.arg("path");
+    if (path.isEmpty()) { gServer.send(400, "text/plain", "Missing path"); return; }
+    streamZipFolder(path.c_str());
+  });
+
+  // Serve static files from LittleFS
+  gServer.onNotFound([]() {
+    const String& uri = gServer.uri();
+    if (uri.startsWith("/viewer/")) {
+      serveFromLittleFS(uri);
+    } else {
+      gServer.send(404, "text/plain", "Not found");
+    }
+  });
+
+  gServer.begin();
+  sysLog("OK. Web server started on port 80");
+
+  for (;;) {
+    gServer.handleClient();
+    vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
