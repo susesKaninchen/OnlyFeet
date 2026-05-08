@@ -49,7 +49,9 @@ static constexpr int MIC_DATA_PIN    = 42;
 static constexpr int MIC_CLK_PIN     = 41;
 static constexpr int SD_CS_PIN       = 21;
 // A0/GPIO1 mit 200 kΩ:200 kΩ Teiler an BAT+  (IMU-CS auf GPIO43 verlegt)
-static constexpr int BATTERY_ADC_PIN = 1;
+static constexpr int BATTERY_ADC_PIN  = 1;
+// D10/GPIO9 — Recording-LED (leuchtet während Aufnahme)
+static constexpr int LED_RECORD_PIN   = 9;
 static constexpr uint16_t AUDIO_FS   = 16000;
 static constexpr uint8_t  AUDIO_BITS = 16;
 static constexpr uint8_t  AUDIO_CHAN = 1;
@@ -233,6 +235,9 @@ void setup() {
   // sollen keinen Reset auslösen. Battery-Management-IC schützt den Akku selbst.
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
+  pinMode(LED_RECORD_PIN, OUTPUT);
+  digitalWrite(LED_RECORD_PIN, LOW);
+
   delay(1000);  // USB-CDC Enumeration
   Serial.begin(115200);
   Wire.begin();
@@ -325,6 +330,7 @@ void setup() {
       if (attempt >= 2) break;
       delay(50);
     }
+    digitalWrite(LED_RECORD_PIN, HIGH);  // Offline-Modus → Aufnahme läuft sofort
   }
 
   gSdMutex = xSemaphoreCreateMutex();
@@ -1060,6 +1066,7 @@ void webTask(void* arg) {
       xSemaphoreGive(gSdMutex);
       mediaCounter = 0;
       gRecording = true;
+      digitalWrite(LED_RECORD_PIN, HIGH);
       Serial.printf("Recording started: %s\n", dataDir);
     }
     gServer.send(200, "application/json", "{\"ok\":true}");
@@ -1067,6 +1074,7 @@ void webTask(void* arg) {
 
   gServer.on("/api/stop", HTTP_POST, []() {
     gRecording = false;
+    digitalWrite(LED_RECORD_PIN, LOW);
     Serial.println("Recording stopped");
     gServer.send(200, "application/json", "{\"ok\":true}");
   });
