@@ -50,8 +50,9 @@ static constexpr int MIC_CLK_PIN     = 41;
 static constexpr int SD_CS_PIN       = 21;
 // A0/GPIO1 mit 200 kΩ:200 kΩ Teiler an BAT+  (IMU-CS auf GPIO43 verlegt)
 static constexpr int BATTERY_ADC_PIN  = 1;
-// D10/GPIO9 — Recording-LED (leuchtet während Aufnahme)
-static constexpr int LED_RECORD_PIN   = 9;
+// D7/GPIO44 — Recording-LED (leuchtet während Aufnahme)
+// GPIO44 ist UART-RX, aber mit ARDUINO_USB_CDC_ON_BOOT=1 frei als GPIO verwendbar.
+static constexpr int LED_RECORD_PIN   = 44;
 static constexpr uint16_t AUDIO_FS   = 16000;
 static constexpr uint8_t  AUDIO_BITS = 16;
 static constexpr uint8_t  AUDIO_CHAN = 1;
