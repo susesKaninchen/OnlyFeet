@@ -25,9 +25,6 @@ I2SClass I2S;
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 
-// Brownout-Detektor
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
 
 #define LOG_VERBOSE 0
 #if LOG_VERBOSE
@@ -39,8 +36,8 @@ I2SClass I2S;
 #endif
 
 /********* WiFi credentials *********/
-#define WIFI_SSID_DEFAULT "MeinHotspot"
-#define WIFI_PASS_DEFAULT "MeinPasswort"
+#define WIFI_SSID_DEFAULT "fablab"
+#define WIFI_PASS_DEFAULT "fablabfdm"
 static char gWifiSSID[64] = WIFI_SSID_DEFAULT;
 static char gWifiPass[64] = WIFI_PASS_DEFAULT;
 
@@ -232,15 +229,12 @@ static uint32_t crc32_update(uint32_t crc, const uint8_t* buf, size_t len) {
 
 /********* Arduino setup *********/
 void setup() {
-  // Brownout-Detektor komplett deaktivieren — LiPo-Spannungsdips beim Sensor-Peak
-  // sollen keinen Reset auslösen. Battery-Management-IC schützt den Akku selbst.
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+  Serial.begin(115200);
+  delay(1000);  // USB-CDC Enumeration
 
   pinMode(LED_RECORD_PIN, OUTPUT);
   digitalWrite(LED_RECORD_PIN, LOW);
 
-  delay(1000);  // USB-CDC Enumeration
-  Serial.begin(115200);
   Wire.begin();
   Wire.setClock(400000);
   sysLog("Booting (main: SPI IMU + VL53L5CX 8x8) ...");
@@ -1009,8 +1003,91 @@ void webTask(void* arg) {
   sysLog("OK. LittleFS mounted");
 
   gServer.on("/", []() {
-    gServer.sendHeader("Location", "/viewer/index.html", true);
-    gServer.send(302, "text/plain", "");
+    static const char PAGE[] PROGMEM = R"HTML(<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OnlyFeet</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:12px;font-family:monospace;background:#111;color:#ddd}
+h1{color:#4af;margin:0 0 12px;font-size:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:#1a1a1a;border-radius:8px;padding:10px}
+.card h2{margin:0 0 6px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px}
+.big{font-size:28px;font-weight:bold;color:#4af}
+.sm{font-size:12px;color:#999;margin-top:3px}
+img{width:100%;border-radius:6px;display:block}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+button{padding:8px 14px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:bold}
+.go{background:#1a4}
+.st{background:#a21}
+.vw{background:#245}
+.rec{color:#f55;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.ok{color:#2a4}
+.er{color:#a22}
+pre{margin:0;font-size:11px;line-height:1.5;max-height:110px;overflow:auto}
+</style></head>
+<body>
+<h1>OnlyFeet</h1>
+<div class="grid">
+<div class="card"><h2>Status</h2>
+  <div class="big"><span id="recst">Idle</span></div>
+  <div class="sm">Pakete: <b id="pkt">—</b> &nbsp;|&nbsp; Uptime: <b id="upt">—</b></div>
+</div>
+<div class="card"><h2>Batterie</h2>
+  <div class="big"><span id="bpct">—</span>%</div>
+  <div class="sm"><span id="bmv">—</span> mV</div>
+</div>
+<div class="card"><h2>IMU</h2>
+  <div class="sm">Acc &nbsp;X:<span id="ax">—</span> Y:<span id="ay">—</span> Z:<span id="az">—</span> g</div>
+  <div class="sm">Gyro X:<span id="gx">—</span> Y:<span id="gy">—</span> Z:<span id="gz">—</span> °/s</div>
+  <div class="sm">ToF: <span id="tof">—</span> mm</div>
+</div>
+<div class="card"><h2>Sensoren</h2><div id="sens" class="sm">—</div></div>
+<div class="card" style="grid-column:span 2"><h2>Boot-Log</h2><pre id="log">—</pre></div>
+<div class="row" style="grid-column:span 2;justify-content:center;padding:4px 0">
+  <button class="go" onclick="cmd('start')">&#9654; Start</button>
+  <button class="st" onclick="cmd('stop')">&#9632; Stop</button>
+  <button class="vw" onclick="location.href='/viewer/index.html'">Viewer</button>
+</div>
+<div class="card" style="grid-column:span 2"><h2>Kamera</h2><img id="cam" src="/api/photo"></div>
+</div>
+<script>
+function cmd(a){fetch('/api/'+a,{method:'POST'}).then(()=>poll());}
+function f(v,d){return v==null?'—':Number(v).toFixed(d);}
+function poll(){
+  fetch('/api/status').then(r=>r.json()).then(d=>{
+    var rec=d.recording;
+    document.getElementById('recst').innerHTML=rec?'<span class="rec">● REC</span>':'Idle';
+    document.getElementById('pkt').textContent=d.packet_count||0;
+    var u=Math.floor((d.uptime_ms||0)/1000);
+    document.getElementById('upt').textContent=Math.floor(u/60)+'m'+('0'+u%60).slice(-2)+'s';
+    var b=d.battery||{};
+    document.getElementById('bpct').textContent=b.pct??'—';
+    document.getElementById('bmv').textContent=b.mv??'—';
+    var im=d.imu||{};
+    document.getElementById('ax').textContent=f(im.ax,2);
+    document.getElementById('ay').textContent=f(im.ay,2);
+    document.getElementById('az').textContent=f(im.az,2);
+    document.getElementById('gx').textContent=f(im.gx,1);
+    document.getElementById('gy').textContent=f(im.gy,1);
+    document.getElementById('gz').textContent=f(im.gz,1);
+    document.getElementById('tof').textContent=(d.tof&&d.tof.distance_mm>=0)?d.tof.distance_mm:'—';
+    var s=d.init||{};
+    document.getElementById('sens').innerHTML=
+      ['sd','camera','imu','magnetometer','tof','audio'].map(k=>
+        '<span class="'+(s[k]?'ok':'er')+'">'+k.toUpperCase()+'</span>'
+      ).join(' ');
+    if(d.log&&d.log.length)
+      document.getElementById('log').textContent=d.log.map(e=>'['+e.ts+'ms] '+e.msg).join('\n');
+  }).catch(()=>{});
+}
+function camRefresh(){document.getElementById('cam').src='/api/photo?t='+Date.now();}
+poll();setInterval(poll,2000);setInterval(camRefresh,5000);
+</script>
+</body></html>)HTML";
+    gServer.send(200, "text/html", PAGE);
   });
 
   gServer.on("/api/status", []() {
@@ -1092,7 +1169,8 @@ void webTask(void* arg) {
     esp_camera_fb_return(fb);
   });
 
-  gServer.on("/api/files", []() {
+  // Fast: only top-level dataN dirs + bucket count, no deep file scan
+  gServer.on("/api/sessions", []() {
     JsonDocument doc;
     JsonArray sessions = doc.to<JsonArray>();
 
@@ -1106,34 +1184,57 @@ void webTask(void* arg) {
           if (name.startsWith("data")) {
             JsonObject sess = sessions.add<JsonObject>();
             sess["session"] = name;
+            int buckets = 0;
             String sessPath = "/" + name;
-            sess["path"] = sessPath;
-            JsonArray files = sess["files"].to<JsonArray>();
             File sessDir = SD.open(sessPath.c_str());
             if (sessDir) {
               File bkt = sessDir.openNextFile();
-              while (bkt) {
-                if (bkt.isDirectory()) {
-                  String bktPath = sessPath + "/" + String(bkt.name());
-                  File bDir = SD.open(bktPath.c_str());
-                  if (bDir) {
-                    File f = bDir.openNextFile();
-                    while (f) {
-                      files.add(bktPath + "/" + String(f.name()));
-                      f.close(); f = bDir.openNextFile();
-                    }
-                    bDir.close();
-                  }
-                }
-                bkt.close(); bkt = sessDir.openNextFile();
-              }
+              while (bkt) { if (bkt.isDirectory()) buckets++; bkt.close(); bkt = sessDir.openNextFile(); }
               sessDir.close();
             }
+            sess["buckets"] = buckets;
           }
         }
         entry.close(); entry = root.openNextFile();
       }
       root.close();
+    }
+    xSemaphoreGive(gSdMutex);
+
+    String out; serializeJson(doc, out);
+    gServer.send(200, "application/json", out);
+  });
+
+  // Slow: full file list for one session — called only when user selects a session
+  gServer.on("/api/session-files", []() {
+    String name = gServer.arg("name");
+    if (name.isEmpty()) { gServer.send(400, "text/plain", "Missing name"); return; }
+
+    JsonDocument doc;
+    doc["session"] = name;
+    JsonArray files = doc["files"].to<JsonArray>();
+
+    xSemaphoreTake(gSdMutex, portMAX_DELAY);
+    String sessPath = "/" + name;
+    File sessDir = SD.open(sessPath.c_str());
+    if (sessDir) {
+      File bkt = sessDir.openNextFile();
+      while (bkt) {
+        if (bkt.isDirectory()) {
+          String bktPath = sessPath + "/" + String(bkt.name());
+          File bDir = SD.open(bktPath.c_str());
+          if (bDir) {
+            File f = bDir.openNextFile();
+            while (f) {
+              files.add(bktPath + "/" + String(f.name()));
+              f.close(); f = bDir.openNextFile();
+            }
+            bDir.close();
+          }
+        }
+        bkt.close(); bkt = sessDir.openNextFile();
+      }
+      sessDir.close();
     }
     xSemaphoreGive(gSdMutex);
 

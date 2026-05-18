@@ -311,7 +311,7 @@
     sessionList.innerHTML = '';
     modalStatus.textContent = 'Lade Session-Liste…';
     try {
-      const resp = await fetch('/api/files');
+      const resp = await fetch('/api/sessions');
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const sessions = await resp.json();
       modalStatus.textContent = '';
@@ -322,8 +322,8 @@
       for (const s of sessions) {
         const li = document.createElement('li');
         li.innerHTML = `<div class="sess-name">${s.session}</div>
-          <div class="sess-info">${s.files.length} Dateien</div>`;
-        li.addEventListener('click', () => loadDeviceSession(s));
+          <div class="sess-info">${s.buckets} Bucket(s)</div>`;
+        li.addEventListener('click', () => loadDeviceSession(s.session));
         sessionList.appendChild(li);
       }
     } catch (e) {
@@ -335,11 +335,15 @@
     modalOverlay.classList.remove('open');
   });
 
-  async function loadDeviceSession(s) {
-    modalStatus.textContent = 'Lade Pakete…';
+  async function loadDeviceSession(sessionName) {
+    modalStatus.textContent = 'Lade Dateiliste…';
     sessionList.innerHTML = '';
     try {
-      const data = await DataLoader.loadFromDevice(s.files, s.session, (loaded, total) => {
+      const fr = await fetch(`/api/session-files?name=${encodeURIComponent(sessionName)}`);
+      if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
+      const sf = await fr.json();
+      modalStatus.textContent = 'Lade Pakete…';
+      const data = await DataLoader.loadFromDevice(sf.files, sessionName, (loaded, total) => {
         modalStatus.textContent = `Lade… ${loaded}/${total}`;
       });
       modalOverlay.classList.remove('open');
